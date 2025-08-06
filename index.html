@@ -1,0 +1,319 @@
+<head>
+  <!-- avoid text rendering issues on various platforms -->
+  <meta charset="utf-8" />
+
+  <!-- prevent auto-zooming on mobile browsers -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap for default styles and utility CSS classes -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Font Awesome icons -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Lodash utility library as _ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+
+  <!-- Vue 2 framework -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+  <!-- Pug template compiler -->
+  <script src="https://pugjs.org/js/pug.js"></script>
+  <script>
+    window.pug = require("pug");
+
+    function renderPug(str) {
+      let indents = str.replace(/^\n/, "").match(/^\s+/);
+      let indentRegex = new RegExp(`^${indents[0]}`, "gm");
+      return pug.render(indents ? str.replace(indentRegex, "") : str);
+    }
+  </script>
+
+  <!-- Ky HTTP client -->
+  <script type="module">
+    import ky from "https://cdn.skypack.dev/ky";
+    window.ky = ky;
+  </script>
+
+  <!-- Custom styles for full height and scrollable columns -->
+  <style>
+    .scrollable-column {
+      height: calc(100vh - 80px);
+      overflow-y: auto;
+    }
+
+    /* Animation for status changes */
+    @keyframes highlight-fade-status {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Class for status changes */
+    .highlight-fade-status {
+      animation: highlight-fade-status 2s ease-in-out forwards;
+    }
+
+    /* Slide height animation with fade */
+    .light-blue-bg {
+      background-color: rgba(204, 229, 255, 0.3); /* Light blue background */
+    }
+
+    /* For the cards in the offers section */
+    .mycard-move,
+    .mycard-enter-active,
+    .mycard-leave-active,
+    .mycard-appear,
+    .mycard-appear-active {
+      transition: all 0.5s ease;
+    }
+    .mycard-enter-from,
+    .mycard-appear-from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .mycard-enter-to,
+    .mycard-appear-to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .mycard-leave-to {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    .mycard-leave-active {
+      position: absolute;
+      width: calc(100% - 1.5rem);
+    }
+
+    /* Slide height animation */
+    .slide-height {
+      transition: height 0.3s ease-in-out;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+</body>
+
+<script>
+  // Utility function to deeply convert all keys in an object to camelCase using Lodash
+  function deepCamelCaseKeys(obj) {
+    if (_.isArray(obj)) {
+      return _.map(obj, deepCamelCaseKeys);
+    }
+    if (_.isPlainObject(obj)) {
+      return _(obj)
+        .mapKeys((value, key) => _.camelCase(key))
+        .mapValues(deepCamelCaseKeys)
+        .value();
+    }
+    return obj;
+  }
+
+  function init() {
+    new Vue({
+      // Attach template to div with this ID
+      el: "#app",
+
+      // Main HTML template but in PUG
+      // language=pug
+      template: renderPug(`
+        .container-fluid.h-100
+          .row.h-100
+            .col-12
+
+              // Tab navigation
+              ul.nav.nav-tabs.mt-3
+                li.nav-item
+                  a.nav-link.active(data-bs-toggle="tab" href="#first-tab")
+                    | Agent
+                li.nav-item
+                  a.nav-link(data-bs-toggle="tab" href="#second-tab")
+                    | Candidates
+                li.nav-item
+                  a.nav-link(data-bs-toggle="tab" href="#third-tab")
+                    | Tools
+
+              // Tab content
+              .tab-content.h-100
+
+                ///// First tab
+                #first-tab.tab-pane.fade.show.active.h-100
+
+                  .d-flex.flex-row
+
+                    .d-flex.flex-column.col-6.w-50.scrollable-column
+                      .p-3
+                        .mb-2
+                          span.h1 Outreach Agent
+                            i.ms-2.fa.fa-user-secret
+                        .card.mb-3
+                          .card-body
+                            h5 Job Table
+                            table.table
+                              thead
+                                th job id
+                                th title
+                                th skills
+                                th status
+                                th candidates
+                              tbody
+                                  tr(v-for="job in state.jobs" :key="job.jobId")
+                                    td(style="max-width: 100px") {{ job.jobId }}
+                                    td(style="max-width: 120px") {{ job.title }}
+                                    td(style="max-width: 250px")
+                                      | {{ job.skills?.join(' / ') }}
+                                    td {{ job.status }}
+                                    td(style="width: 150px")
+                                      template(v-if="job.jobId === state.offers?.job.jobId")
+                                        .badge.bg-success AI-AGENT
+                                          i.ms-2.fa.fa-user-secret
+                                        .pt-1
+                                          template(v-for="candidate in state.offers?.candidates")
+                                            i.d-inline-block.me-2.fa.fa-envelope
+                                            span.me-2 {{ candidate.name }}
+
+
+                    .d-flex.flex-column.col-3.scrollable-column
+                      .p-3
+                        h3 Send Offers
+                        transition-group(
+                          name="mycard"
+                          tag="div"
+                          class="d-flex flex-column gap-3"
+                          v-if="state.offers?.candidates?.length"
+                        )
+                          .card.mb-3(
+                            v-for="candidate in state.offers.candidates"
+                            :key="candidate.name"
+                          )
+                            .card-body
+                                b
+                                  i.fa.fa-user-tag
+                                  | &nbsp; {{ candidate.name }} -
+                                  | {{ candidate.score }}%
+                                div {{ candidate.jobId }}
+                                div {{ candidate.skills?.join(' / ') }}
+                                .small
+                                  ul.mb-0
+                                    li.m-0(v-for="(reason, index) in candidate.reasons" :key="index") {{ reason }}
+                                .badge.bg-success(v-if="!candidate.sentEmail?.message") AI-AGENT
+                                  i.mx-2.fa.fa-user-secret
+                                  | Generating email
+                                transition(name="mycard")
+                                  .light-blue-bg(v-if="candidate.sentEmail?.message")
+                                    div
+                                      .badge.bg-success AI-AGENT
+                                          i.mx-2.fa.fa-user-secret
+                                          | Sent email
+                                    .p-2.small.highlight-row
+                                      | Email: {{ candidate.sentEmail.message}}
+
+                    .d-flex.flex-column.col-3.scrollable-column
+                      .p-3
+                        h3 Gather Replies
+                        transition-group(name="none" tag="div" class="d-flex flex-column gap-3")
+                          .card.mb-3(
+                            v-for="reply in state.replies"
+                            :key="reply.candidate?.name"
+                          )
+                            .card-body
+                                b
+                                  i.fa.fa-envelope
+                                  | &nbsp; {{ reply.candidate?.name }}
+                                div {{ reply.jobId }}
+                                div
+                                  .badge.bg-success AI-AGENT
+                                    i.mx-2.fa.fa-user-secret
+                                    | Intepreted email
+                                div {{ reply.classification }}
+
+                ///// Second tab
+                #second-tab.tab-pane.fade.h-100
+                    .d-flex.flex-column.p-3
+                          h1 Candidates
+                          .card.mb-3
+                            .card-body
+                              table.table
+                                thead
+                                  th id
+                                  th title
+                                  th skills
+                                  th status
+                                  th jobId
+                                  th messages
+                                tbody
+                                  tr(v-for="c in state.candidates")
+                                    td(style="max-width: 50px") {{ c.candidateId }}
+                                    td(style="max-width: 100px")
+                                        i.fa.fa-user-tag
+                                        =" "
+                                        | {{ c.name }}
+                                    td(style="max-width: 100px")
+                                      | {{ c.skills?.join(' / ') }}
+                                    td {{ c.status }}
+                                    td {{ c.jobId }}
+                                    td
+                                        .small.overflow-auto(style="max-width: 350px")
+                                            pre {{c.messages }}
+
+                ///// Third tab
+                #third-tab.tab-pane.fade.h-100
+
+                  .d-flex.flex-row
+                    .d-flex.flex-column
+                        .p-3
+                          h1 Tools
+                          .card.mb-3
+                            .card-body
+                              template(v-for="tool in tools")
+                                pre.m-0 {{ tool.name }}
+                                .small(v-for="line in tool.lines")
+                                  | {{ line }}
+                                .pb-3
+                `),
+
+      // Variables available in the template
+      data: {
+        tools: {},
+        state: {},
+      },
+
+      // Constructor called upon template instantiation
+      async mounted() {
+        this.tools = [];
+        for (let elem of await ky.get("/tools").json()) {
+          this.tools.push({
+            name: elem.function.name,
+            lines: elem.function.description.split("\n"),
+          });
+        }
+        await this.fetchState();
+        setInterval(this.fetchState, 1000);
+      },
+
+      // Methods available in the template
+      methods: {
+        async fetchState() {
+          const state = await ky.get("/state").json();
+          this.state = deepCamelCaseKeys(state);
+        },
+      },
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>

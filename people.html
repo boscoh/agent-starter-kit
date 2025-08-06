@@ -1,0 +1,598 @@
+<head>
+  <!-- avoid text rendering issues on various platforms -->
+  <meta charset="utf-8"/>
+
+  <!-- prevent auto-zooming on mobile browsers -->
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+
+  <!-- Bootstrap for default styles and utility CSS classes -->
+  <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+  />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Font Awesome icons -->
+  <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+      rel="stylesheet"
+  />
+
+  <!-- Lodash utility library as _ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+
+  <!-- Vue 2 framework -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+  <!-- Pug template compiler -->
+  <script src="https://pugjs.org/js/pug.js"></script>
+  <script>
+    window.pug = require("pug");
+
+    function renderPug(str) {
+      let indents = str.replace(/^\n/, "").match(/^\s+/);
+      let indentRegex = new RegExp(`^${indents[0]}`, "gm");
+      return pug.render(indents ? str.replace(indentRegex, "") : str);
+    }
+  </script>
+
+  <!-- Ky HTTP client -->
+  <script type="module">
+    import ky from "https://cdn.skypack.dev/ky";
+    window.ky = ky;
+  </script>
+
+  <!-- Custom styles for full height and scrollable columns -->
+  <style>
+    .scrollable-column {
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+
+    /* Animation for status changes - light blue */
+    @keyframes highlight-fade-status {
+      from {
+        opacity: 0;
+        background-color: #cce5ff;
+      }
+      to {
+        opacity: 1;
+        background-color: #cce5ff;
+      }
+    }
+
+    /* Class for status changes */
+    .highlight-fade-status {
+      animation: highlight-fade-status 2s ease-in-out forwards;
+    }
+
+    /* Green fade for replies */
+    .highlight-fade-reply {
+      animation: highlight-fade-green 4s ease-in-out forwards;
+    }
+
+    @keyframes highlight-fade-green {
+      0% {
+        background-color: #66ff66;  /* brighter green pop */
+        box-shadow: 0 0 15px #33cc33; /* strong glow */
+        transform: scale(1.02);      /* slight "pop out" zoom */
+      }
+      30% {
+        background-color: #b3ffb3;
+        box-shadow: 0 0 8px #70db70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    /* Yellow fade for unread */
+    .highlight-fade-unread {
+      animation: highlight-fade-yellow 4s ease-in-out forwards;
+    }
+
+    @keyframes highlight-fade-yellow {
+      0% {
+        background-color: #fff066;  /* bright yellow pop */
+        box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
+        transform: scale(1.02);
+      }
+      30% {
+        background-color: #fff4b3;
+        box-shadow: 0 0 8px #ffeb70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+
+
+    /* Custom styles for email elements */
+    .email-subject {
+      color: #230bc3; /* Light blue */
+    }
+
+    .email-body {
+      color: #d63384; /* Pink */
+    }
+
+    .response-text {
+      color: #096809; /* Green */
+    }
+
+    .response-card {
+      background-color: #FFFACD !important; /* Light yellow */
+    }
+
+    /* Animation for new cards */
+    .email-card-enter-active, .email-card-leave-active {
+      transition: all 2s ease;
+      max-height: 1000px; /* Adjust based on your max card height */
+      overflow: hidden;
+    }
+
+    .email-card-enter, .email-card-leave-to {
+      max-height: 0;
+      opacity: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+
+  </style>
+</head>
+
+<body>
+<div id="app"></div>
+</body>
+
+<script>
+
+  // Utility function to deeply convert all keys in an object to camelCase
+  function deepCamelCaseKeys(obj) {
+    if (Array.isArray(obj)) {
+      return obj.map(item => deepCamelCaseKeys(item));
+    }
+    if (obj !== null && typeof obj === 'object') {
+      return Object.entries(obj).reduce((acc, [key, value]) => {
+        acc[_.camelCase(key)] = deepCamelCaseKeys(value);
+        return acc;
+      }, {});
+    }
+    return obj;
+  }
+
+  function init() {
+    new Vue({
+          // Attach template to div with this ID
+          el: "#app",
+
+          // Main HTML template but in PUG
+          // language=pug
+          template: renderPug(`
+        div.container-fluid.h-100
+          .row.h-100
+            .col-12
+
+              // Tab navigation
+              ul.nav.nav-tabs.mt-3
+                li.nav-item
+                  a.nav-link.active(data-bs-toggle="tab" href="#first-tab")
+                    | Candidates
+                li.nav-item
+                  a.nav-link(data-bs-toggle="tab" href="#second-tab")
+                    | Emails
+                li.nav-item
+                  a.nav-link(data-bs-toggle="tab" href="#third-tab")
+                    | SMS
+
+              // Tab content
+              .tab-content.h-100
+
+                ///// First tab
+                #first-tab.tab-pane.fade.show.active.h-100
+                  .d-flex.flex-row
+                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
+                      .d-flex.flex-row.overflow-auto
+                        .p-3
+                          h1 Candidates
+                            i.ms-2.fas.fa-laptop
+                          .d-flex.flex-row.flex-wrap.gap-3
+                            div.card(v-for="candidate in candidates" style="width: 18rem;")
+                              .card-body
+                                .h3 {{ candidate.name}}
+                                div
+                                    i.far.fa-envelope.me-2
+                                    code {{ candidate.email }}
+                                div
+                                    i.fas.fa-phone-volume.me-2
+                                    code {{ candidate.phone }}
+                                div(:class="{ 'highlight-fade-status': candidate.statusChanged }")
+                                    i(:class="candidate.status === 'Available' ? 'fas fa-check-square' : 'far fa-square'").me-2
+                                    code {{ candidate.status }}
+                                // Display the first unread email body (truncated) if available, otherwise show "no unread emails" message
+                                div.border-top.pt-2.mt-2.highlight-fade-unread(
+                                    v-if="candidateUnreadEmails[candidate.candidate_id] && candidateUnreadEmails[candidate.candidate_id].length > 0"
+                                    :key="candidateUnreadEmails[candidate.candidate_id][0].body-candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.far.fa-envelope-open.me-2
+                                    span.text-muted Unread emails:
+                                    span {{ truncateText(candidateUnreadEmails[candidate.candidate_id][0].body, 100) }}
+                                div.border-top.pt-2.mt-2(
+                                    v-else
+                                    :key="'no-unread-email-' + candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.far.fa-envelope-open.me-2
+                                    span.text-muted Unread emails:
+                                    span You have no unread emails
+
+                                // Display the latest candidate email reply if available, otherwise show "You have no replies" message
+                                div.border-top.pt-2.mt-2.highlight-fade-reply(
+                                    v-if="candidateReplies[candidate.candidate_id] && candidateReplies[candidate.candidate_id].length > 0"
+                                    :key="getReplyKey(candidate.candidate_id, candidateReplies[candidate.candidate_id][0])"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.far.fa-comment-dots.me-2
+                                    span.text-muted Latest email reply:
+                                    span {{ truncateText(candidateReplies[candidate.candidate_id][0], 100) }}
+                                div.border-top.pt-2.mt-2(
+                                    v-else
+                                    :key="'no-latest-email-' + candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.far.fa-comment-dots.me-2
+                                    span.text-muted Latest email reply:
+                                    span You have no email replies
+
+                                // Display the first unread SMS body (truncated) if available, otherwise show "no unread SMS" message
+                                div.border-top.pt-2.mt-2.highlight-fade-unread(
+                                    v-if="candidateUnreadSms[candidate.candidate_id] && candidateUnreadSms[candidate.candidate_id].length > 0"
+                                    :key="candidateUnreadSms[candidate.candidate_id][0].body-candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.fas.fa-sms.me-2
+                                    span.text-muted Unread SMS:
+                                    span {{ truncateText(candidateUnreadSms[candidate.candidate_id][0].body, 100) }}
+                                div.border-top.pt-2.mt-2(
+                                    v-else
+                                    :key="'no-unread-sms-' + candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.fas.fa-sms.me-2
+                                    span.text-muted Unread SMS:
+                                    span You have no unread SMS
+
+                                // Display the latest candidate SMS reply if available, otherwise show "You have no SMS replies" message
+                                div.border-top.pt-2.mt-2.highlight-fade-reply(
+                                    v-if="candidateSmsReplies[candidate.candidate_id] && candidateSmsReplies[candidate.candidate_id].length > 0"
+                                    :key="getReplyKey(candidate.candidate_id, candidateSmsReplies[candidate.candidate_id][0], 'sms')"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.fas.fa-reply.me-2
+                                    span.text-muted Latest SMS reply:
+                                    span {{ truncateText(candidateSmsReplies[candidate.candidate_id][0], 100) }}
+                                div.border-top.pt-2.mt-2(
+                                    v-else
+                                    :key="'no-latest-sms-' + candidate.candidate_id"
+                                    style="font-size: 0.75rem;"
+                                )
+                                    i.fas.fa-reply.me-2
+                                    span.text-muted Latest SMS reply:
+                                    span You have no SMS replies
+
+                ///// Second tab
+                #second-tab.tab-pane.fade.h-100
+                  .d-flex.flex-row
+                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
+                      .d-flex.flex-column.overflow-auto
+                        .p-3
+                          h1 Emails
+                            i.ms-2.fas.fa-envelope
+                          .d-flex.flex-column.gap-2
+                            transition-group(name="email-card" tag="div" style="width: 100%;")
+                              .card.mb-2(v-for="email in allEmails" :key="email.email_id" style="width: 100%;")
+                                .card-body.py-2(style="font-size: 0.95rem;")
+                                  .h5.mb-1.email-subject {{ email.subject }}
+                                  div.mb-1
+                                    i.far.fa-user.me-2
+                                    span Candidate: {{ getCandidateName(email.candidate_id) }}
+                                  div.mb-1
+                                    i.far.fa-clock.me-2
+                                    span {{ new Date(email.timestamp).toLocaleString() }}
+                                  div.mt-1
+                                    p.mb-1.email-body {{ email.body }}
+                                  div.mt-1(
+                                    v-if="email.read && email.response"
+                                  )
+                                    .card.response-card
+                                      .card-body.py-2
+                                        .h6.mb-1 Response:
+                                        p.mb-1.response-text {{ email.response.text }}
+                                        div
+                                          i.far.fa-clock.me-2
+                                          span {{ new Date(email.response.timestamp).toLocaleString() }}
+
+
+                ///// Third tab
+                #third-tab.tab-pane.fade.h-100
+                  .d-flex.flex-row
+                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
+                      .d-flex.flex-column.overflow-auto
+                        .p-3
+                          h1 SMS
+                            i.ms-2.fas.fa-sms
+                          .d-flex.flex-column.gap-2
+                            div.card.mb-2(v-for="sms in allSms" style="width: 100%;")
+                              .card-body.py-2(style="font-size: 0.95rem;")
+                                div.mb-1
+                                  i.far.fa-user.me-2
+                                  span Candidate: {{ getCandidateName(sms.candidate_id) }}
+                                div.mb-1
+                                  i.far.fa-clock.me-2
+                                  span {{ new Date(sms.timestamp).toLocaleString() }}
+                                div.mt-1
+                                  p.mb-1.email-body {{ sms.body }}
+                                div.mt-1(
+                                  v-if="sms.read && sms.response"
+                                )
+                                  .card.response-card
+                                    .card-body.py-2
+                                      .h6.mb-1 Response:
+                                      p.mb-1.response-text {{ sms.response.text }}
+                                      div
+                                        i.far.fa-clock.me-2
+                                        span {{ new Date(sms.response.timestamp).toLocaleString() }}
+
+
+
+                `),
+
+          // Variables available in the template
+          data: {
+            tools: {},
+            state: {},
+            candidates: [],
+            candidateUnreadEmails: {}, // Store unread emails for each candidate
+            candidateReplies: {}, // Store candidate replies from read emails
+            allEmails: [], // Store all emails for the Emails tab
+            candidateUnreadSms: {}, // Store unread SMS for each candidate
+            candidateSmsReplies: {}, // Store candidate replies from read SMS
+            allSms: [], // Store all SMS for the SMS tab
+            lastSeenReplies: {}, // { candidateId: "last reply text" }
+            lastSeenSmsReplies: {}
+          },
+
+          // Constructor called upon template instantiation
+          async mounted() {
+            window.vm = this;
+            let response = await ky.get('/candidates').json()
+            console.log(response)
+            this.candidates = response
+
+            await this.fetchUnreadEmails()
+            await this.fetchCandidateReplies()
+            await this.fetchAllEmails()
+            await this.fetchUnreadSms()
+            await this.fetchCandidateSmsReplies()
+            await this.fetchAllSms()
+
+            // Refresh unread emails, candidate replies, and candidate status every second
+            setInterval(async () => {
+              await this.fetchUnreadEmails()
+              await this.fetchCandidateReplies()
+              await this.fetchUnreadSms()
+              await this.fetchCandidateSmsReplies()
+              await this.fetchCandidateStatus()
+            }, 1000)
+
+            setInterval(async () => {
+              await this.fetchCandidateReplies()
+              await this.fetchCandidateSmsReplies()
+            }, 5000)
+
+
+            // Refresh all emails and SMS every 5 seconds
+            setInterval(async () => {
+              await this.fetchAllEmails()
+              await this.fetchAllSms()
+            }, 5000)
+          },
+
+          // Methods available in the template
+          methods: {
+
+            async fetchUnreadEmails() {
+              // Fetch unread emails for each candidate
+              for (const candidate of this.candidates) {
+                try {
+                  const emails = await ky.get(`/emails?candidate_id=${candidate.candidate_id}`).json();
+                  // Filter for unread emails
+                  const unreadEmails = emails.filter(email => !email.read);
+                  unreadEmails.sort((a, b) => {
+                    const timestampA = new Date(a.timestamp);
+                    const timestampB = new Date(b.timestamp);
+                    return timestampB - timestampA; // Sort in descending order (newest first)
+                  });
+
+                  // Store in the candidateUnreadEmails object
+                  this.$set(this.candidateUnreadEmails, candidate.candidate_id, unreadEmails);
+                } catch (error) {
+                  console.error(`Error fetching emails for candidate ${candidate.candidate_id}:`, error);
+                }
+              }
+            },
+
+            async fetchCandidateReplies() {
+              // Fetch emails for each candidate
+              for (const candidate of this.candidates) {
+                try {
+                  const emails = await ky.get(`/emails?candidate_id=${candidate.candidate_id}`).json();
+                  // Filter for read emails with responses
+                  const repliesEmails = emails.filter(email => email.read && email.response);
+                  // Sort by response timestamp
+                  repliesEmails.sort((a, b) => {
+                    const timestampA = new Date(a.response.timestamp);
+                    const timestampB = new Date(b.response.timestamp);
+                    return timestampB - timestampA; // Sort in descending order (newest first)
+                  });
+                  // Extract response text and store in candidateReplies
+                  const replies = repliesEmails.map(email => email.response.text);
+                  this.$set(this.candidateReplies, candidate.candidate_id, replies);
+                } catch (error) {
+                  console.error(`Error fetching replies for candidate ${candidate.candidate_id}:`, error);
+                }
+              }
+            },
+
+            // Helper method to truncate text to a specified length
+            truncateText(text, maxLength) {
+              if (!text) return '';
+              if (text.length <= maxLength) return text;
+              return text.substring(0, maxLength) + '...';
+            },
+
+            async fetchCandidateStatus() {
+              try {
+                // Fetch the latest candidate data from the server
+                const updatedCandidates = await ky.get('/candidates').json();
+
+                // Update the candidates array with the latest status information
+                for (const updatedCandidate of updatedCandidates) {
+                  const existingCandidate = this.candidates.find(c => c.id === updatedCandidate.candidate_id);
+                  if (existingCandidate && existingCandidate.status !== updatedCandidate.status) {
+                    // Only update if the status has changed
+                    console.log(`Status change detected for ${updatedCandidate.name}: ${existingCandidate.status} -> ${updatedCandidate.status}`);
+
+                    // Update the status
+                    existingCandidate.status = updatedCandidate.status;
+
+                    // Set the statusChanged flag to trigger the animation
+                    this.$set(existingCandidate, 'statusChanged', true);
+
+                    // Reset the statusChanged flag after 3 seconds to remove the highlight
+                    setTimeout(() => {
+                      this.$set(existingCandidate, 'statusChanged', false);
+                    }, 3000);
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching candidate status:', error);
+              }
+            },
+
+            // Fetch all emails and sort them with the latest on top
+            async fetchAllEmails() {
+              try {
+                // Fetch all emails from the server
+                const emails = await ky.get('/emails').json();
+
+                // Sort emails by timestamp (latest first)
+                emails.sort((a, b) => {
+                  const timestampA = new Date(a.timestamp);
+                  const timestampB = new Date(b.timestamp);
+                  return timestampB - timestampA; // Sort in descending order (newest first)
+                });
+
+                // Update the allEmails array
+                this.allEmails = emails;
+              } catch (error) {
+                console.error('Error fetching all emails:', error);
+              }
+            },
+
+            // Helper method to get candidate name by ID
+            getCandidateName(candidateId) {
+              const candidate = this.candidates.find(c => c.id === candidateId);
+              return candidate ? candidate.name : 'Unknown Candidate';
+            },
+
+            // Fetch all SMS messages and sort them with the latest on top
+            async fetchAllSms() {
+              try {
+                // Fetch all SMS messages from the server
+                const smsMessages = await ky.get('/sms').json();
+
+                // Sort SMS messages by timestamp (latest first)
+                smsMessages.sort((a, b) => {
+                  const timestampA = new Date(a.timestamp);
+                  const timestampB = new Date(b.timestamp);
+                  return timestampB - timestampA; // Sort in descending order (newest first)
+                });
+
+                // Update the allSms array
+                this.allSms = smsMessages;
+              } catch (error) {
+                console.error('Error fetching all SMS messages:', error);
+              }
+            },
+
+            async fetchUnreadSms() {
+              // Fetch unread SMS for each candidate
+              for (const candidate of this.candidates) {
+                try {
+                  const smsMessages = await ky.get(`/sms?candidate_id=${candidate.candidate_id}`).json();
+                  // Filter for unread SMS
+                  const unreadSms = smsMessages.filter(sms => !sms.read);
+                  unreadSms.sort((a, b) => {
+                    const timestampA = new Date(a.timestamp);
+                    const timestampB = new Date(b.timestamp);
+                    return timestampB - timestampA; // Sort in descending order (newest first)
+                  });
+
+                  // Store in the candidateUnreadSms object
+                  this.$set(this.candidateUnreadSms, candidate.candidate_id, unreadSms);
+                } catch (error) {
+                  console.error(`Error fetching SMS for candidate ${candidate.candidate_id}:`, error);
+                }
+              }
+            },
+
+            async fetchCandidateSmsReplies() {
+              // Fetch SMS for each candidate
+              for (const candidate of this.candidates) {
+                try {
+                  const smsMessages = await ky.get(`/sms?candidate_id=${candidate.candidate_id}`).json();
+                  // Filter for read SMS with responses
+                  const repliesSms = smsMessages.filter(sms => sms.read && sms.response);
+                  // Sort by response timestamp
+                  repliesSms.sort((a, b) => {
+                    const timestampA = new Date(a.response.timestamp);
+                    const timestampB = new Date(b.response.timestamp);
+                    return timestampB - timestampA; // Sort in descending order (newest first)
+                  });
+                  // Extract response text and store in candidateSmsReplies
+                  const replies = repliesSms.map(sms => sms.response.text);
+                  this.$set(this.candidateSmsReplies, candidate.candidate_id, replies);
+                } catch (error) {
+                  console.error(`Error fetching SMS replies for candidate ${candidate.candidate_id}:`, error);
+                }
+              }
+            },
+
+            getReplyKey(candidateId, newReply, type = 'email') {
+              const store = type === 'email' ? this.lastSeenReplies : this.lastSeenSmsReplies;
+              if (store[candidateId] !== newReply) {
+                // update only if new reply differs
+                store[candidateId] = newReply;
+                return `${newReply}-${candidateId}`;
+              }
+              // return same key to avoid animation if reply unchanged
+              return `${store[candidateId]}-${candidateId}`;
+            }
+          }
+        }
+    );
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+</script>

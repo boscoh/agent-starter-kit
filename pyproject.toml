@@ -1,0 +1,26 @@
+[project]
+name = "agent"
+version = "0.1.0"
+description = "Outreach Agent example"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "argparse>=1.4.0",
+    "faker>=25.0.0",
+    "fastapi>=0.111.0",
+    "fastapi-mcp>=0.3.7",
+    "fastapi-mcp-client>=0.4.0",
+    "filelock>=3.18.0",
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.2.1",
+    "openai>=1.35.13",
+    "ollama>=0.5.1",
+    "path>=17.1.0",
+    "pydash>=8.0.5",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "python-dotenv>=1.0.1",
+    "rich>=14.0.0",
+    "uvicorn>=0.35.0",
+]
+
