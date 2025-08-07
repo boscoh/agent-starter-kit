@@ -16,7 +16,7 @@ app = FastAPI()
 
 
 async def check_jobs_loop(stop_event: asyncio.Event):
-    logger.info("Initialise check_jobs_loop")
+    logger.info("check_jobs_loop: init")
     while not stop_event.is_set():
         try:
             await agent.check_jobs()
@@ -29,7 +29,7 @@ async def check_jobs_loop(stop_event: asyncio.Event):
 
 
 async def check_email_replies_loop(stop_event: asyncio.Event):
-    logger.info("Initialise check_email_replies_loop")
+    logger.info("check_email_replies_loop: init")
     while not stop_event.is_set():
         try:
             await agent.check_candidates_replies()
@@ -95,10 +95,10 @@ if __name__ == "__main__":
     logging.getLogger("uvicorn").setLevel(logging.ERROR)
     logging.getLogger("uvicorn.access").disabled = True
 
-    logger.info(f"Starting Agent Server...")
+    logger.info("Starting Agent Server...")
     uvicorn.run(
         f"{Path(__file__).stem}:app",
-        host= "0.0.0.0",
+        host="0.0.0.0",
         port=3000,
         reload=True,
         log_config=None,

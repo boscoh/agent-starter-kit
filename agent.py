@@ -5,6 +5,7 @@ from typing import Any, Dict
 import httpx
 from path import Path
 from pydash import py_
+
 from candidates import CandidateStore
 from jobs import JobStore
 from mcp_client import MCPClient
@@ -32,6 +33,7 @@ state = {
     "candidates": candidate_store.get_list(),
     "jobs": job_store.get_list(),
     "currentJob": None,
+    "currentMatches": [],
     "matches": [],
     "replies": [],
 }
@@ -51,15 +53,31 @@ async def find_candidates_agent(job):
     response = ""
     try:
         prompt = (
-            "Give me 2 or 3 candidates who are available for the jobs "
-            f"{job} that have a good match with skills.  "
-            "Be really generous with the matching. "
-            "Return as formatted json "
-            "list only and include "
-            "a skills list and a reasons list, job_id, status, candidate_id, name (of the candidate),"
-            "and a score as a percentage from 0 to 100."
-            "Return an empty list if no candidates are available."
-            "Return as json only and nothing else."
+            f"""
+            Give me 2 or 3 candidates who are available for the jobs 
+            {job} that have a good match with skills.  
+            Be really generous with the matching. 
+            Return as formatted json list in the format:
+             [
+                {{
+                    "candidate_id": <candidate_id>,
+                    "name": <candidate_name>,
+                    "score": <score_as_percentage>,
+                    "job_id": <job_id>,
+                    "skills": [
+                        "<candidate skill 1>",
+                        "<candidate skill 2>",
+                    ],
+                    "reasons": [
+                        "<reason 1>",
+                        "<reason 2>",
+                    ]
+                }}
+            ]
+            Give reasons as short sentences.
+            Return an empty list if no candidates are available.
+            Return as JSON only, and nothing else.
+            """
         )
         response = await mcp_chat_client.process_query(prompt)
         (debug_dir / "find_candidates.txt").write_text(response)
@@ -68,9 +86,9 @@ async def find_candidates_agent(job):
             save_json_file(debug_dir / "find_candidates.json", proposed_candidates)
             result = proposed_candidates
         else:
-            logger.error(f"Error parsing proposed candidates: {proposed_candidates}")
+            logger.error(f"Error getting proposed candidates: {proposed_candidates}")
     except Exception as e:
-        logger.error(f"Error parsing proposed candidates: {e}", exc_info=True)
+        logger.error(f"Error getting proposed candidates: {e}", exc_info=True)
         logger.error(response)
     logger.info(f"find_candidates_agent: finish - found {len(result)} candidates")
     return result
@@ -115,14 +133,14 @@ async def classify_email_agent(message):
         prompt = (
             "Classify the following email in terms of: 'interested' or 'rejected'"
             f"'{message}'"
-            "Please return with a single classification, and nothing else."
+            "Please return with a single word, and nothing else."
         )
         response = await mcp_chat_client.process_query(prompt)
+        response = parse_json_from_response(response)
         response = str(response)
-        classification = parse_json_from_response(response)
-        (debug_dir / "classify_email.txt").write_text(classification)
-        if len(classification.split()) == 1:
-            classification = get_word(classification)
+        (debug_dir / "classify_email.txt").write_text(response)
+        if len(response.split()) == 1:
+            classification = get_word(response)
     except Exception as e:
         logger.error(f"Error classifying email: {e}", exc_info=True)
     logger.info(f"---\n{message}\n---")
@@ -136,7 +154,7 @@ async def check_jobs():
     logger.info("check_jobs: start")
 
     job = py_.sample(state["jobs"])
-    state["matches"] = []
+    state["currentMatches"] = []
     state["currentJob"] = job
     n_sent = 0
 
@@ -147,6 +165,7 @@ async def check_jobs():
             )
             if not candidate:
                 continue
+            state["currentMatches"].insert(0, match)
             state["matches"].insert(0, match)
 
             email_data = await create_email_agent(candidate, job)
@@ -156,7 +175,7 @@ async def check_jobs():
             candidate_store.update_candidate_status(
                 candidate["candidate_id"], "requested", job["job_id"]
             )
-            await send_email(candidate, match["sent_email"])
+            await send_email(candidate, email_data)
 
             state["candidates"] = candidate_store.get_list()
             n_sent += 1

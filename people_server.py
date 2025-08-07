@@ -289,6 +289,7 @@ async def list_emails(
         result = email_manager.get_list()
     return result
 
+
 @app.post("/send-sms/{candidate_id}")
 async def send_sms(candidate_id: int, request: Request):
     """
