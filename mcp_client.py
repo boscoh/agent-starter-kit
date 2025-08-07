@@ -12,12 +12,6 @@ from rich.logging import RichHandler
 
 from chat_client import get_chat_client
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=True)],
-)
 logger = logging.getLogger(__name__)
 
 
@@ -70,9 +64,8 @@ class MCPClient:
         mcp_server_url: str = "http://localhost:8080/sse",
         chat_client_type="openai",
     ):
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("Initializing MCPClient with server URL: %s", mcp_server_url)
-        self.logger.debug("Using chat client type: %s", chat_client_type)
+        logger.info("Initializing MCPClient with server URL: %s", mcp_server_url)
+        logger.debug("Using chat client type: %s", chat_client_type)
 
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
@@ -95,13 +88,13 @@ class MCPClient:
         self.session: ClientSession = await self._session_context.__aenter__()
         await self.session.initialize()
         self.is_async_init = True
-        self.logger.info("Initialized an MCP-SSE client...")
+        logger.info("Initialized an MCP-SSE client...")
 
         self.tools = await self.get_tools()
-        self.logger.info("Tools:")
+        logger.info("Tools:")
         for tool in self.tools:
             name = tool["function"]["name"]
-            self.logger.info(f"- {name}")
+            logger.info(f"- {name}")
 
     @async_init_prehook
     async def get_tools(self):
@@ -161,32 +154,29 @@ class MCPClient:
 
         return "\n".join(final_text)
 
-    @async_init_prehook
-    async def chat_loop(self):
-        print("Type your queries or 'quit' to exit.")
-        while True:
-            try:
-                query = input("\nQuery: ").strip()
-                if query.lower() == "quit":
-                    break
-                response = await self.process_query(query)
-                print(response)
-            except Exception as e:
-                self.logger.error(f"Error: {str(e)}")
-                print(f"\nError: {str(e)}")
 
 
 async def main():
-    if len(sys.argv) < 2:
-        print("Usage: uv run mcp_client.py http://localhost:8080/sse")
-        sys.exit(1)
-
-    mcp_server_url = sys.argv[1]
-    client = MCPClient(mcp_server_url)
-    try:
-        await client.chat_loop()
-    finally:
-        await client.cleanup()
+    logging.basicConfig(
+        level=logging.WARNING,
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)],
+    )
+    mcp_server_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8080/sse"
+    client = MCPClient(mcp_server_url, "ollama")
+    print("Type your queries or 'quit' to exit.")
+    while True:
+        query = input("\nQuery: ").strip()
+        if query.lower() == "quit":
+            break
+        try:
+            response = await client.process_query(query)
+            print(response)
+        except Exception as e:
+            logger.error(f"Error: {str(e)}")
+            print(f"\nError: {str(e)}")
+    await client.cleanup()
 
 
 if __name__ == "__main__":
