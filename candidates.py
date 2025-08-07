@@ -38,11 +38,10 @@ class CandidateStore(JsonListStore[dict]):
             return True
         return False
 
-    def generate_fake_candidates(self, n: int):
+    def generate_fake_candidates(self):
         self.data = []
         people = load_json_file("people.json")
-        for i in range(n):
-            person = random.choice(people)
+        for person in people:
             skills = random.sample(
                 [
                     "Python",
@@ -79,7 +78,7 @@ if __name__ == "__main__":
         handlers=[RichHandler(rich_tracebacks=True)],
     )
     store = CandidateStore()
+    store.generate_fake_candidates()
     candidates = store.get_list()
     logger.info(f"Loaded {len(candidates)} candidates")
     logger.debug(pretty_repr(candidates))
-    store.generate_fake_candidates(5)

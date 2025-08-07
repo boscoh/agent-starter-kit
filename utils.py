@@ -11,7 +11,7 @@ T = TypeVar("T")
 def parse_json_from_response(response: str):
     # Handle case where response starts with a tool call
     tool_call_match = re.search(
-        r"\[Calling tool .+ with args \{\}\]([\s\S]*)", response
+        r"\[Calling tool .+ with args \{.*\}\]([\s\S]*)", response
     )
     if tool_call_match:
         response = tool_call_match.group(1).strip()

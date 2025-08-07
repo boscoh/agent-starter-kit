@@ -231,10 +231,15 @@
                     .d-flex.flex-column.col-3.scrollable-column
                       .p-3
                         h3 Gather Replies
-                        transition-group(name="none" tag="div" class="d-flex flex-column gap-2")
+                        transition-group(
+                          name="mycard"
+                          tag="div"
+                          class="d-flex flex-column gap-2"
+                        )
                           .card(
                             v-for="reply in state.replies"
                             :key="reply.email?.emailId"
+                            v-if="state.replies?.length"
                           )
                             .card-body
                               span.me-2 {{ reply.jobId }}
@@ -314,7 +319,6 @@
         async fetchState() {
           const state = await ky.get("/state").json();
           this.state = deepCamelCaseKeys(state);
-          console.log(_.cloneDeep(this.state))
         },
       },
     });

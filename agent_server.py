@@ -101,5 +101,5 @@ if __name__ == "__main__":
         port=3000,
         reload=True,
         log_config=None,
-        log_level=logging.ERROR,
+        log_level=logging.WARNING,
     )
