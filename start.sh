@@ -1,10 +1,9 @@
 #!/bin/bash
 # Starts all servers in separate Terminal tabs using ttab. Assumes Python venv is in .venv and ttab is installed.
 
-
+# Remove dangling processes
 if command -v psword &> /dev/null; then
     psword -k Cellar
-    psword -k pycandidate
     sleep 4
 fi
 
@@ -22,5 +21,5 @@ ttab bash -c "cd $PROJECT_DIR; rm emails.json*; uv run people_server.py"
 ttab bash -c "cd $PROJECT_DIR; uv run mcp_server.py"
 ttab bash -c "cd $PROJECT_DIR; uv run agent_server.py"
 
-#./browser.sh http://localhost:8000 &
-#./browser.sh http://localhost:3000 &
+./browser.sh http://localhost:8000 &
+./browser.sh http://localhost:3000 &

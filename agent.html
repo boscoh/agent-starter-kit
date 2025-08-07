@@ -199,18 +199,18 @@
                           class="d-flex flex-column gap-2"
                           v-if="state.matches?.length"
                         )
-                          .card.mb-3(
+                          .card.mb-2(
                             v-for="match in state.matches"
                             :key="match.name + match.jobId"
                           )
                             .card-body
+                                span.me-2 {{ match.jobId }}
                                 b
                                   i.fa.fa-user-tag
                                   | &nbsp; {{ match.name }} -
                                   | {{ match.score }}%
-                                div {{ match.jobId }}
                                 div {{ match.skills?.join(' / ') }}
-                                .small
+                                .text-muted(style="font-size: 0.75rem;")
                                   ul.mb-2
                                     li.m-0(v-for="(reason, index) in match.reasons" :key="index") {{ reason }}
                                 .badge.bg-dark(v-if="!match.sentEmail?.message") AI-AGENT

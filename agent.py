@@ -78,6 +78,7 @@ async def find_candidates_agent(job):
             ]
             Give reasons as short sentences.
             Return an empty list if no candidates are available.
+            Otherwise return at most 3 items in the list.
             Return as JSON only, and nothing else.
             """
         response = await mcp_chat_client.process_query(prompt)
@@ -87,9 +88,9 @@ async def find_candidates_agent(job):
             save_json_file(debug_dir / "find_candidates.json", matches)
             result = matches
         else:
-            logger.error(f"Error getting proposed candidates: {matches}")
+            logger.error(f"find_candidates_agent: Response is not a list - {matches}")
     except Exception as e:
-        logger.error(f"Error getting proposed candidates: {e}", exc_info=True)
+        logger.error(f"find_candidates_agent: {e}", exc_info=True)
         logger.error(response)
     logger.info(f"find_candidates_agent: finish - found {len(result)} candidates")
     return result
