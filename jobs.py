@@ -53,12 +53,12 @@ class JobStore(JsonListStore[Dict[str, Any]]):
         return True
 
     async def async_generate_fake_jobs(self, n: int) -> None:
-        self.data = await generate_fake_jobs(n, "people.json")
+        self.data = await generate_fake_jobs(n, "candidates.json")
         self.save()
 
 
 async def generate_fake_jobs(
-    n: int, candidates_json: str = "people.json", chat_client_type: str = "ollama"
+    n: int, candidates_json: str = "candidates.json", chat_client_type: str = "ollama"
 ) -> list[dict[str, Any]]:
     logger.info(f"Generating {n} fake jobs using {candidates_json}")
 
@@ -77,9 +77,7 @@ async def generate_fake_jobs(
             candidates = load_json_file(candidates_json)
             for candidate in candidates:
                 if "skills" in candidate and isinstance(candidate["skills"], list):
-                    candidate_skills.update(
-                        skill.lower() for skill in candidate["skills"] if skill
-                    )
+                    candidate_skills.update(s.lower() for s in candidate["skills"])
             logger.info(f"Loaded {len(candidate_skills)} unique skills from candidates")
         except Exception as e:
             logger.error(f"Failed to load candidate skills: {e}", exc_info=True)
@@ -94,11 +92,11 @@ async def generate_fake_jobs(
             "Generate a realistic job title for a tech company. "
             "The title should be related to these skills:\n"
             f"- {skills_sample}\n\n"
-            "Return only the job title, nothing else."
+            "Return only the job title of four words or less, nothing else."
         )
         try:
             messages = [{"role": "user", "content": prompt}]
-            logger.info(f"Generating title with prompt: {prompt[:100]}...")
+            logger.info("Generating title...")
             resp = await chat_client.get_completion(messages)
             title = resp["text"].strip()
             logger.info(f"Generated title: {title}")
@@ -122,6 +120,7 @@ async def generate_fake_jobs(
             "The job should require skills from this list (but don't list them explicitly):\n"
             f"- {skills_sample}\n\n"
             "Focus on responsibilities and qualifications. Keep it concise (2-3 sentences)."
+            "Return only the description, nothing else."
         )
         try:
             messages = [{"role": "user", "content": prompt}]

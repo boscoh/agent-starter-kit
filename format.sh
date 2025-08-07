@@ -1,3 +1,3 @@
-ruff check --fix --select I  *.py
+ruff check --fix --extend-select I  *.py
 ruff format *py
-prettier -w index.html
+prettier -w *.html

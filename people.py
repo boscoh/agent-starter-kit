@@ -12,6 +12,7 @@ from sms import SMSManager
 
 logger = logging.getLogger(__name__)
 
+
 def generate_email_from_name(name: str) -> str:
     name_parts = name.split()
     first_name = name_parts[0].lower()
@@ -40,24 +41,28 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
     ) -> str:
         interested = random.random() < 0.6
         preference = "interested" if interested else "not interested"
-        system_prompt = f"""
-            You are {candidate_name}, a job candidate.
-            Reply politely to the recruiter in 1-3 sentences.
-            You are {preference} in this opportunity.
-            """
-        user_content = (
-            f"Recruiter's message:\nSubject: {message_type}\nBody: {message_content}"
-        )
         response = await self.chat_client.get_completion(
             [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
+                {
+                    "role": "system",
+                    "content": f"""
+                        You are {candidate_name}, a job candidate.
+                        Reply politely to the recruiter in 1-3 sentences.
+                        You are {preference} in this opportunity.
+                        """,
+                },
+                {
+                    "role": "user",
+                    "content": f"Recruiter's message:\nSubject: {message_type}\nBody: {message_content}",
+                },
             ]
         )
         return response["text"]
 
     def _get_next_id(self) -> int:
-        return max([c.get("candidate_id", 0) for c in self.data], default=0) + 1
+        if not self.data:
+            return 1
+        return max(c.get("candidate_id", 0) for c in self.data) + 1
 
     def save_candidate(
         self, name: str, email: str, phone: str, status: str
@@ -75,9 +80,8 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
         return new_candidate
 
     def generate_fake_candidates(self, n: int = 5):
+        self.load()
         fake = Faker()
-
-        new_candidates = []
         for _ in range(n):
             name = fake.name()
             candidate = {
@@ -87,10 +91,7 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
                 "phone": fake.phone_number(),
                 "status": random.choice(["Available", "Not Available"]),
             }
-            new_candidates.append(candidate)
-
-        self.load()
-        self.data.extend(new_candidates)
+            self.data.append(candidate)
         self.save()
         logger.info(f"Generated {n} new candidates!")
 
@@ -140,7 +141,9 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
                     )
                     self.email_manager.save_response(email["email_id"], reply)
                     replied_count += 1
-                    logger.info(f"Auto-reply: {candidate['name']} replied -> {reply}")
+                    logger.info(
+                        f"Auto-reply: {candidate['name']} replied\n---\n{reply}\n---"
+                    )
                 else:
                     logger.info(f"{candidate['name']} ignored '{email['subject']}'")
 

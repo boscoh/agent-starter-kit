@@ -41,9 +41,8 @@ job_store = JobStore()
 candidate_store = CandidateStore()
 
 
-
 @mcp.tool()
-async def get_available_candidates() -> list[dict]:
+async def get_candidates() -> list[dict]:
     """Retrieves all candidates who are currently available for work.
 
     Returns:
@@ -51,7 +50,12 @@ async def get_available_candidates() -> list[dict]:
                   about an available candidate. Each candidate dictionary includes
                   details such as candidate_id, name, skills, and availability status.
     """
-    return candidate_store.get_list("status", "available")
+    candidates = candidate_store.get_list()
+    candidates = candidates.copy()
+    for candidate in candidates:
+        del candidate["messages"]
+        del candidate["job_id"]
+    return candidates
 
 
 @mcp.tool()

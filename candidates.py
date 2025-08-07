@@ -42,7 +42,7 @@ class CandidateStore(JsonListStore[dict]):
             return True
         return False
 
-    def add_message(self, candidate_id: str, message: str) -> bool:
+    def add_message(self, candidate_id: str, message: any) -> bool:
         candidate = self.get_single("candidate_id", candidate_id)
         if candidate:
             if "messages" not in candidate:
@@ -77,11 +77,12 @@ class CandidateStore(JsonListStore[dict]):
         return self.data
 
 
-def main():
+async def main():
     store = CandidateStore()
     candidates = store.get_list()
     logger.info(f"Loaded {len(candidates)} candidates")
     logger.debug(pretty_repr(candidates))
+    await store.async_generate_fake_candidates(5)
 
 
 if __name__ == "__main__":

@@ -1,21 +1,21 @@
 <head>
   <!-- avoid text rendering issues on various platforms -->
-  <meta charset="utf-8"/>
+  <meta charset="utf-8" />
 
   <!-- prevent auto-zooming on mobile browsers -->
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Bootstrap for default styles and utility CSS classes -->
   <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css"
-      rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css"
+    rel="stylesheet"
   />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
 
   <!-- Font Awesome icons -->
   <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
-      rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+    rel="stylesheet"
   />
 
   <!-- Lodash utility library as _ -->
@@ -49,7 +49,6 @@
       overflow-y: auto;
     }
 
-
     /* Animation for status changes - light blue */
     @keyframes highlight-fade-status {
       from {
@@ -74,9 +73,9 @@
 
     @keyframes highlight-fade-green {
       0% {
-        background-color: #66ff66;  /* brighter green pop */
+        background-color: #66ff66; /* brighter green pop */
         box-shadow: 0 0 15px #33cc33; /* strong glow */
-        transform: scale(1.02);      /* slight "pop out" zoom */
+        transform: scale(1.02); /* slight "pop out" zoom */
       }
       30% {
         background-color: #b3ffb3;
@@ -97,7 +96,7 @@
 
     @keyframes highlight-fade-yellow {
       0% {
-        background-color: #fff066;  /* bright yellow pop */
+        background-color: #fff066; /* bright yellow pop */
         box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
         transform: scale(1.02);
       }
@@ -113,8 +112,6 @@
       }
     }
 
-
-
     /* Custom styles for email elements */
     .email-subject {
       color: #230bc3; /* Light blue */
@@ -129,39 +126,39 @@
     }
 
     .response-card {
-      background-color: #FFFACD !important; /* Light yellow */
+      background-color: #fffacd !important; /* Light yellow */
     }
 
     /* Animation for new cards */
-    .email-card-enter-active, .email-card-leave-active {
+    .email-card-enter-active,
+    .email-card-leave-active {
       transition: all 2s ease;
       max-height: 1000px; /* Adjust based on your max card height */
       overflow: hidden;
     }
 
-    .email-card-enter, .email-card-leave-to {
+    .email-card-enter,
+    .email-card-leave-to {
       max-height: 0;
       opacity: 0;
       margin: 0 !important;
       padding: 0 !important;
       border: none !important;
     }
-
   </style>
 </head>
 
 <body>
-<div id="app"></div>
+  <div id="app"></div>
 </body>
 
 <script>
-
   // Utility function to deeply convert all keys in an object to camelCase
   function deepCamelCaseKeys(obj) {
     if (Array.isArray(obj)) {
-      return obj.map(item => deepCamelCaseKeys(item));
+      return obj.map((item) => deepCamelCaseKeys(item));
     }
-    if (obj !== null && typeof obj === 'object') {
+    if (obj !== null && typeof obj === "object") {
       return Object.entries(obj).reduce((acc, [key, value]) => {
         acc[_.camelCase(key)] = deepCamelCaseKeys(value);
         return acc;
@@ -170,14 +167,20 @@
     return obj;
   }
 
+  let emailReverseTimeCompare = (a, b) => {
+    const timestampA = new Date(a.timestamp);
+    const timestampB = new Date(b.timestamp);
+    return timestampB - timestampA; // Sort in descending order (newest first)
+  };
+
   function init() {
     new Vue({
-          // Attach template to div with this ID
-          el: "#app",
+      // Attach template to div with this ID
+      el: "#app",
 
-          // Main HTML template but in PUG
-          // language=pug
-          template: renderPug(`
+      // Main HTML template but in PUG
+      // language=pug
+      template: renderPug(`
         div.container-fluid.h-100
           .row.h-100
             .col-12
@@ -206,7 +209,7 @@
                           h1 Candidates
                             i.ms-2.fas.fa-laptop
                           .d-flex.flex-row.flex-wrap.gap-3
-                            div.card(v-for="candidate in candidates" style="width: 18rem;")
+                            div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidate_id")
                               .card-body
                                 .h3 {{ candidate.name}}
                                 div
@@ -357,241 +360,207 @@
 
                 `),
 
-          // Variables available in the template
-          data: {
-            tools: {},
-            state: {},
-            candidates: [],
-            candidateUnreadEmails: {}, // Store unread emails for each candidate
-            candidateReplies: {}, // Store candidate replies from read emails
-            allEmails: [], // Store all emails for the Emails tab
-            candidateUnreadSms: {}, // Store unread SMS for each candidate
-            candidateSmsReplies: {}, // Store candidate replies from read SMS
-            allSms: [], // Store all SMS for the SMS tab
-            lastSeenReplies: {}, // { candidateId: "last reply text" }
-            lastSeenSmsReplies: {}
-          },
+      // Variables available in the template
+      data: {
+        candidates: [],
+        candidateUnreadEmails: {}, // Store unread emails for each candidate
+        candidateReplies: {}, // Store candidate replies from read emails
+        allEmails: [], // Store all emails for the Emails tab
+        candidateUnreadSms: {}, // Store unread SMS for each candidate
+        candidateSmsReplies: {}, // Store candidate replies from read SMS
+        allSms: [], // Store all SMS for the SMS tab
+        lastSeenReplies: {}, // { candidateId: "last reply text" }
+        lastSeenSmsReplies: {},
+      },
 
-          // Constructor called upon template instantiation
-          async mounted() {
-            window.vm = this;
-            let response = await ky.get('/candidates').json()
-            console.log(response)
-            this.candidates = response
+      // Constructor called upon template instantiation
+      async mounted() {
+        window.vm = this;
 
-            await this.fetchUnreadEmails()
-            await this.fetchCandidateReplies()
-            await this.fetchAllEmails()
-            await this.fetchUnreadSms()
-            await this.fetchCandidateSmsReplies()
-            await this.fetchAllSms()
+        let response = await ky.get("/candidates").json();
+        console.log("candidates", _.cloneDeep(response));
+        this.candidates = response;
 
-            // Refresh unread emails, candidate replies, and candidate status every second
-            setInterval(async () => {
-              await this.fetchUnreadEmails()
-              await this.fetchCandidateReplies()
-              await this.fetchUnreadSms()
-              await this.fetchCandidateSmsReplies()
-              await this.fetchCandidateStatus()
-            }, 1000)
+        // Refresh unread emails, candidate replies, and candidate status every second
+        setInterval(async () => {
+          await this.fetchAllEmails();
+          await this.fetchCandidateStatus();
+        }, 2000);
+      },
 
-            setInterval(async () => {
-              await this.fetchCandidateReplies()
-              await this.fetchCandidateSmsReplies()
-            }, 5000)
+      // Methods available in the template
+      methods: {
+        async fetchAllEmails() {
+          try {
+            const emails = await ky.get("/emails").json();
+            emails.sort(emailReverseTimeCompare);
+            this.allEmails = emails;
+            await this.filterUnreadEmails();
+            await this.filterEmailReplies();
+          } catch (error) {
+            console.error("Error fetching all emails:", error);
+          }
+        },
 
+        async filterUnreadEmails() {
+          for (const candidate of this.candidates) {
+            const unreadEmails = this.allEmails.filter(
+              (e) => !email.read && e.candidate_id === candidate.candidate_id,
+            );
+            this.$set(
+              this.candidateUnreadEmails,
+              candidate.candidate_id,
+              unreadEmails,
+            );
+          }
+        },
 
-            // Refresh all emails and SMS every 5 seconds
-            setInterval(async () => {
-              await this.fetchAllEmails()
-              await this.fetchAllSms()
-            }, 5000)
-          },
+        async filterEmailReplies() {
+          for (const candidate of this.candidates) {
+            const repliesEmails = this.allEmails.filter(
+              (e) =>
+                email.read &&
+                email.response &&
+                b(e.candidate_id === candidaxwte.candidate_id),
+            );
+            const replies = repliesEmails.map((email) => email.response.text);
+            this.$set(this.candidateReplies, candidate.candidate_id, replies);
+          }
+        },
 
-          // Methods available in the template
-          methods: {
+        truncateText(text, maxLength) {
+          if (!text) return "";
+          if (text.length <= maxLength) return text;
+          return text.substring(0, maxLength) + "...";
+        },
 
-            async fetchUnreadEmails() {
-              // Fetch unread emails for each candidate
-              for (const candidate of this.candidates) {
-                try {
-                  const emails = await ky.get(`/emails?candidate_id=${candidate.candidate_id}`).json();
-                  // Filter for unread emails
-                  const unreadEmails = emails.filter(email => !email.read);
-                  unreadEmails.sort((a, b) => {
-                    const timestampA = new Date(a.timestamp);
-                    const timestampB = new Date(b.timestamp);
-                    return timestampB - timestampA; // Sort in descending order (newest first)
-                  });
-
-                  // Store in the candidateUnreadEmails object
-                  this.$set(this.candidateUnreadEmails, candidate.candidate_id, unreadEmails);
-                } catch (error) {
-                  console.error(`Error fetching emails for candidate ${candidate.candidate_id}:`, error);
-                }
+        async fetchCandidateStatus() {
+          try {
+            const updatedCandidates = await ky.get("/candidates").json();
+            for (const updatedCandidate of updatedCandidates) {
+              const candidate = this.candidates.find(
+                (c) => c.candidate_id === updatedCandidate.candidate_id,
+              );
+              if (candidate && candidate.status !== updatedCandidate.status) {
+                console.log(
+                  `Status change detected for ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
+                );
+                candidate.status = updatedCandidate.status;
+                this.$set(candidate, "statusChanged", true);
+                setTimeout(() => {
+                  this.$set(candidate, "statusChanged", false);
+                }, 3000);
               }
-            },
+            }
+          } catch (error) {
+            console.error("Error fetching candidate status:", error);
+          }
+        },
 
-            async fetchCandidateReplies() {
-              // Fetch emails for each candidate
-              for (const candidate of this.candidates) {
-                try {
-                  const emails = await ky.get(`/emails?candidate_id=${candidate.candidate_id}`).json();
-                  // Filter for read emails with responses
-                  const repliesEmails = emails.filter(email => email.read && email.response);
-                  // Sort by response timestamp
-                  repliesEmails.sort((a, b) => {
-                    const timestampA = new Date(a.response.timestamp);
-                    const timestampB = new Date(b.response.timestamp);
-                    return timestampB - timestampA; // Sort in descending order (newest first)
-                  });
-                  // Extract response text and store in candidateReplies
-                  const replies = repliesEmails.map(email => email.response.text);
-                  this.$set(this.candidateReplies, candidate.candidate_id, replies);
-                } catch (error) {
-                  console.error(`Error fetching replies for candidate ${candidate.candidate_id}:`, error);
-                }
-              }
-            },
+        // Helper method to get candidate name by ID
+        getCandidateName(candidateId) {
+          const candidate = this.candidates.find(
+            (c) => c.candidate_id === candidateId,
+          );
+          return candidate ? candidate.name : "Unknown Candidate";
+        },
 
-            // Helper method to truncate text to a specified length
-            truncateText(text, maxLength) {
-              if (!text) return '';
-              if (text.length <= maxLength) return text;
-              return text.substring(0, maxLength) + '...';
-            },
+        // Fetch all SMS messages and sort them with the latest on top
+        async fetchAllSms() {
+          try {
+            // Fetch all SMS messages from the server
+            const smsMessages = await ky.get("/sms").json();
 
-            async fetchCandidateStatus() {
-              try {
-                // Fetch the latest candidate data from the server
-                const updatedCandidates = await ky.get('/candidates').json();
+            // Sort SMS messages by timestamp (latest first)
+            smsMessages.sort((a, b) => {
+              const timestampA = new Date(a.timestamp);
+              const timestampB = new Date(b.timestamp);
+              return timestampB - timestampA; // Sort in descending order (newest first)
+            });
 
-                // Update the candidates array with the latest status information
-                for (const updatedCandidate of updatedCandidates) {
-                  const existingCandidate = this.candidates.find(c => c.id === updatedCandidate.candidate_id);
-                  if (existingCandidate && existingCandidate.status !== updatedCandidate.status) {
-                    // Only update if the status has changed
-                    console.log(`Status change detected for ${updatedCandidate.name}: ${existingCandidate.status} -> ${updatedCandidate.status}`);
+            // Update the allSms array
+            this.allSms = smsMessages;
+          } catch (error) {
+            console.error("Error fetching all SMS messages:", error);
+          }
+        },
 
-                    // Update the status
-                    existingCandidate.status = updatedCandidate.status;
+        async fetchUnreadSms() {
+          // Fetch unread SMS for each candidate
+          for (const candidate of this.candidates) {
+            try {
+              const smsMessages = await ky
+                .get(`/sms?candidate_id=${candidate.candidate_id}`)
+                .json();
+              // Filter for unread SMS
+              const unreadSms = smsMessages.filter((sms) => !sms.read);
+              unreadSms.sort((a, b) => {
+                const timestampA = new Date(a.timestamp);
+                const timestampB = new Date(b.timestamp);
+                return timestampB - timestampA; // Sort in descending order (newest first)
+              });
 
-                    // Set the statusChanged flag to trigger the animation
-                    this.$set(existingCandidate, 'statusChanged', true);
-
-                    // Reset the statusChanged flag after 3 seconds to remove the highlight
-                    setTimeout(() => {
-                      this.$set(existingCandidate, 'statusChanged', false);
-                    }, 3000);
-                  }
-                }
-              } catch (error) {
-                console.error('Error fetching candidate status:', error);
-              }
-            },
-
-            // Fetch all emails and sort them with the latest on top
-            async fetchAllEmails() {
-              try {
-                // Fetch all emails from the server
-                const emails = await ky.get('/emails').json();
-
-                // Sort emails by timestamp (latest first)
-                emails.sort((a, b) => {
-                  const timestampA = new Date(a.timestamp);
-                  const timestampB = new Date(b.timestamp);
-                  return timestampB - timestampA; // Sort in descending order (newest first)
-                });
-
-                // Update the allEmails array
-                this.allEmails = emails;
-              } catch (error) {
-                console.error('Error fetching all emails:', error);
-              }
-            },
-
-            // Helper method to get candidate name by ID
-            getCandidateName(candidateId) {
-              const candidate = this.candidates.find(c => c.id === candidateId);
-              return candidate ? candidate.name : 'Unknown Candidate';
-            },
-
-            // Fetch all SMS messages and sort them with the latest on top
-            async fetchAllSms() {
-              try {
-                // Fetch all SMS messages from the server
-                const smsMessages = await ky.get('/sms').json();
-
-                // Sort SMS messages by timestamp (latest first)
-                smsMessages.sort((a, b) => {
-                  const timestampA = new Date(a.timestamp);
-                  const timestampB = new Date(b.timestamp);
-                  return timestampB - timestampA; // Sort in descending order (newest first)
-                });
-
-                // Update the allSms array
-                this.allSms = smsMessages;
-              } catch (error) {
-                console.error('Error fetching all SMS messages:', error);
-              }
-            },
-
-            async fetchUnreadSms() {
-              // Fetch unread SMS for each candidate
-              for (const candidate of this.candidates) {
-                try {
-                  const smsMessages = await ky.get(`/sms?candidate_id=${candidate.candidate_id}`).json();
-                  // Filter for unread SMS
-                  const unreadSms = smsMessages.filter(sms => !sms.read);
-                  unreadSms.sort((a, b) => {
-                    const timestampA = new Date(a.timestamp);
-                    const timestampB = new Date(b.timestamp);
-                    return timestampB - timestampA; // Sort in descending order (newest first)
-                  });
-
-                  // Store in the candidateUnreadSms object
-                  this.$set(this.candidateUnreadSms, candidate.candidate_id, unreadSms);
-                } catch (error) {
-                  console.error(`Error fetching SMS for candidate ${candidate.candidate_id}:`, error);
-                }
-              }
-            },
-
-            async fetchCandidateSmsReplies() {
-              // Fetch SMS for each candidate
-              for (const candidate of this.candidates) {
-                try {
-                  const smsMessages = await ky.get(`/sms?candidate_id=${candidate.candidate_id}`).json();
-                  // Filter for read SMS with responses
-                  const repliesSms = smsMessages.filter(sms => sms.read && sms.response);
-                  // Sort by response timestamp
-                  repliesSms.sort((a, b) => {
-                    const timestampA = new Date(a.response.timestamp);
-                    const timestampB = new Date(b.response.timestamp);
-                    return timestampB - timestampA; // Sort in descending order (newest first)
-                  });
-                  // Extract response text and store in candidateSmsReplies
-                  const replies = repliesSms.map(sms => sms.response.text);
-                  this.$set(this.candidateSmsReplies, candidate.candidate_id, replies);
-                } catch (error) {
-                  console.error(`Error fetching SMS replies for candidate ${candidate.candidate_id}:`, error);
-                }
-              }
-            },
-
-            getReplyKey(candidateId, newReply, type = 'email') {
-              const store = type === 'email' ? this.lastSeenReplies : this.lastSeenSmsReplies;
-              if (store[candidateId] !== newReply) {
-                // update only if new reply differs
-                store[candidateId] = newReply;
-                return `${newReply}-${candidateId}`;
-              }
-              // return same key to avoid animation if reply unchanged
-              return `${store[candidateId]}-${candidateId}`;
+              // Store in the candidateUnreadSms object
+              this.$set(
+                this.candidateUnreadSms,
+                candidate.candidate_id,
+                unreadSms,
+              );
+            } catch (error) {
+              console.error(
+                `Error fetching SMS for candidate ${candidate.candidate_id}:`,
+                error,
+              );
             }
           }
-        }
-    );
+        },
+
+        async fetchCandidateSmsReplies() {
+          // Fetch SMS for each candidate
+          for (const candidate of this.candidates) {
+            try {
+              const smsMessages = await ky
+                .get(`/sms?candidate_id=${candidate.candidate_id}`)
+                .json();
+              // Filter for read SMS with responses
+              const repliesSms = smsMessages.filter(
+                (sms) => sms.read && sms.response,
+              );
+              // Sort by response timestamp
+              repliesSms.sort((a, b) => {
+                const timestampA = new Date(a.response.timestamp);
+                const timestampB = new Date(b.response.timestamp);
+                return timestampB - timestampA; // Sort in descending order (newest first)
+              });
+              // Extract response text and store in candidateSmsReplies
+              const replies = repliesSms.map((sms) => sms.response.text);
+              this.$set(
+                this.candidateSmsReplies,
+                candidate.candidate_id,
+                replies,
+              );
+            } catch (error) {
+              console.error(
+                `Error fetching SMS replies for candidate ${candidate.candidate_id}:`,
+                error,
+              );
+            }
+          }
+        },
+
+        getReplyKey(candidateId, newReply, type = "email") {
+          const store =
+            type === "email" ? this.lastSeenReplies : this.lastSeenSmsReplies;
+          if (store[candidateId] !== newReply) {
+            // update only if new reply differs
+            store[candidateId] = newReply;
+            return `${newReply}-${candidateId}`;
+          }
+          // return same key to avoid animation if reply unchanged
+          return `${store[candidateId]}-${candidateId}`;
+        },
+      },
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -18,7 +18,9 @@ class EmailStore(JsonListStore[Dict[str, Any]]):
             logger.debug(f"Loaded existing email store from {self.json_file}")
 
     def _get_next_email_id(self) -> int:
-        return max((e.get("email_id", 0) for e in self.get_list()), default=0) + 1
+        if not self.data:
+            return 1
+        return max(c.get("email_id", 0) for c in self.data) + 1
 
     def send_email(
         self,

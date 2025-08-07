@@ -5,7 +5,7 @@
 if command -v psword &> /dev/null; then
     psword -k Cellar
     psword -k pycandidate
-    sleep 5
+    sleep 3
 fi
 
 # Check if ttab is installed

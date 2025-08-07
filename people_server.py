@@ -4,15 +4,15 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
+import uvicorn
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
+from path import Path
 from rich.logging import RichHandler
-import uvicorn
 
 from emails import EmailStore
 from people import PeopleStore
 from sms import SMSManager
-
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ sms_manager = SMSManager()
 
 
 async def poll_email_reply_loop(stop_event: asyncio.Event):
-    logger.info("Starting email reply polling loop")
+    logger.info("Initialise poll_email_reply_loop")
     while not stop_event.is_set():
         try:
             replied_count = await people_manager.poll_and_reply_to_emails()
@@ -42,7 +42,7 @@ async def poll_email_reply_loop(stop_event: asyncio.Event):
 
 
 async def poll_sms_reply_loop(stop_event: asyncio.Event):
-    logger.info("Starting SMS reply polling loop")
+    logger.info("Initialise poll_sms_reply_loop")
     while not stop_event.is_set():
         try:
             replied_count = await people_manager.poll_and_reply_to_sms()
@@ -60,7 +60,7 @@ async def poll_sms_reply_loop(stop_event: asyncio.Event):
 
 
 async def status_update_loop(stop_event: asyncio.Event):
-    logger.info("Starting status update loop")
+    logger.info("Initialise status_update_loop")
     while not stop_event.is_set():
         try:
             updated_count = people_manager.update_random_statuses()
@@ -74,7 +74,7 @@ async def status_update_loop(stop_event: asyncio.Event):
             logger.error(f"Error in status update loop: {str(e)}", exc_info=True)
 
         try:
-            await asyncio.wait_for(stop_event.wait(), timeout=4)
+            await asyncio.wait_for(stop_event.wait(), timeout=10)
         except asyncio.TimeoutError:
             pass
 
@@ -197,7 +197,7 @@ async def list_candidates(
     Returns:
         list: List of candidate dictionaries
     """
-    logger.info(f"Listing candidates with status filter: {status}")
+    logger.info(f"Listing candidates status={status}")
     try:
         if status is None:
             candidates = people_manager.get_list()
@@ -208,38 +208,6 @@ async def list_candidates(
     except Exception as e:
         logger.error(f"Error listing candidates: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.put("/update-status/{candidate_id}")
-async def update_status(
-    candidate_id: int,
-    status: str = Query(..., description="New status, e.g., Available"),
-):
-    """
-    Update a candidate's status.
-
-    Args:
-        candidate_id (int): ID of the candidate to update
-        status (str): New status value
-
-    Example:
-        curl -X PUT "http://localhost:8000/update-status/1?status=Interviewing"
-
-    Returns:
-        dict: Success message and updated candidate data
-
-    Raises:
-        HTTPException: 404 if candidate not found
-    """
-    updated_candidate = people_manager.update_status(candidate_id, status)
-
-    if not updated_candidate:
-        raise HTTPException(status_code=404, detail="Candidate not found")
-
-    return {
-        "message": f"Candidate {updated_candidate['name']}'s status updated to {status}",
-        "candidate": updated_candidate,
-    }
 
 
 @app.post("/send-email/{candidate_id}")
@@ -314,66 +282,12 @@ async def list_emails(
     Returns:
         list: List of email dictionaries
     """
-    return email_manager.get_list("candidate_id", candidate_id)
-
-
-@app.get("/emails/recruiter")
-async def get_recruiter_emails(
-    recruiter_email: str = Query(..., description="Email address of the recruiter"),
-):
-    """
-    Get all emails sent by a specific recruiter.
-
-    Args:
-        recruiter_email (str): Email of the recruiter
-
-    Example:
-        curl -X GET "http://localhost:8000/emails/recruiter?recruiter_email=recruiter@company.com"
-
-    Returns:
-        dict: Message and list of emails
-    """
-    emails = email_manager.get_emails_by_from(recruiter_email)
-    if not emails:
-        return {
-            "message": f"No emails found from recruiter: {recruiter_email}",
-            "emails": [],
-        }
-    return {
-        "message": f"Found {len(emails)} emails from recruiter: {recruiter_email}",
-        "emails": emails,
-    }
-
-
-@app.get("/emails/recruiter/replies")
-async def get_recruiter_email_replies(
-    recruiter_email: str = Query(..., description="Email address of the recruiter"),
-):
-    """
-    Get all email replies received for a specific recruiter.
-
-    Args:
-        recruiter_email (str): Email of the recruiter
-
-    Example:
-        curl -X GET "http://localhost:8000/emails/recruiter/replies?recruiter_email=recruiter@company.com"
-
-    Returns:
-        dict: Message and list of email replies
-    """
-    emails = email_manager.get_emails_by_from(recruiter_email)
-    replies = [email for email in emails if email["response"] is not None]
-
-    if not replies:
-        return {
-            "message": f"No email replies found for recruiter: {recruiter_email}",
-            "replies": [],
-        }
-    return {
-        "message": f"Found {len(replies)} email replies for recruiter: {recruiter_email}",
-        "replies": replies,
-    }
-
+    logger.info("Listing emails")
+    if candidate_id:
+        result = email_manager.get_list("candidate_id", candidate_id)
+    else:
+        result = email_manager.get_list()
+    return result
 
 @app.post("/send-sms/{candidate_id}")
 async def send_sms(candidate_id: int, request: Request):
@@ -449,66 +363,7 @@ async def list_sms(
     return sms_list
 
 
-@app.get("/sms/recruiter")
-async def get_recruiter_sms(
-    recruiter_phone: str = Query(..., description="Phone number of the recruiter"),
-):
-    """
-    Get all SMS messages sent by a specific recruiter.
-
-    Args:
-        recruiter_phone (str): Phone number of the recruiter
-
-    Example:
-        curl -X GET "http://localhost:8000/sms/recruiter?recruiter_phone=%2B1987654321"
-
-    Returns:
-        dict: Message and list of SMS messages
-    """
-    sms_list = sms_manager.get_sms_by_recruiter(recruiter_phone)
-    if not sms_list:
-        return {
-            "message": f"No SMS messages found from recruiter: {recruiter_phone}",
-            "sms": [],
-        }
-    return {
-        "message": f"Found {len(sms_list)} SMS messages from recruiter: {recruiter_phone}",
-        "sms": sms_list,
-    }
-
-
-@app.get("/sms/recruiter/replies")
-async def get_recruiter_sms_replies(
-    recruiter_phone: str = Query(..., description="Phone number of the recruiter"),
-):
-    """
-    Get all SMS replies received for a specific recruiter.
-
-    Args:
-        recruiter_phone (str): Phone number of the recruiter
-
-    Example:
-        curl -X GET "http://localhost:8000/sms/recruiter/replies?recruiter_phone=%2B1987654321"
-
-    Returns:
-        dict: Message and list of SMS replies
-    """
-    sms_list = sms_manager.get_sms_by_recruiter(recruiter_phone)
-    replies = [sms for sms in sms_list if sms["response"] is not None]
-
-    if not replies:
-        return {
-            "message": f"No SMS replies found for recruiter: {recruiter_phone}",
-            "replies": [],
-        }
-    return {
-        "message": f"Found {len(replies)} SMS replies for recruiter: {recruiter_phone}",
-        "replies": replies,
-    }
-
-
 if __name__ == "__main__":
-    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format="%(message)s",
@@ -516,13 +371,12 @@ if __name__ == "__main__":
         handlers=[RichHandler(rich_tracebacks=True)],
     )
 
-    # Set uvicorn loggers to WARNING level to reduce noise
-    # logging.getLogger("uvicorn").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.access").disabled = True  # Disable access logs
 
     logger.info("Starting People Server...")
     uvicorn.run(
-        "people_server:app",
+        f"{Path(__file__).stem}:app",
         host="0.0.0.0",
         port=8000,
         reload=False,

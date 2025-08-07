@@ -97,15 +97,11 @@ class MCPClient:
         self.is_async_init = True
         self.logger.info("Initialized an MCP-SSE client...")
 
-        tools = await self.get_tools()
-        self.logger.info("Listing tools...")
-        for tool in tools:
+        self.tools = await self.get_tools()
+        self.logger.info("Tools:")
+        for tool in self.tools:
             name = tool["function"]["name"]
-            description = tool["function"]["description"]
             self.logger.info(f"- {name}")
-            for line in description.split("\n"):
-                if line.strip():
-                    self.logger.info(f"    {line}")
 
     @async_init_prehook
     async def get_tools(self):
@@ -130,11 +126,8 @@ class MCPClient:
 
     @async_init_prehook
     async def process_query(self, query: str) -> str:
-        self.logger.info(f"Processing query: {query[:40]}...")
-
         messages = [{"role": "user", "content": str(query)}]
-        tools = await self.get_tools()
-        response = await self.chat_client.get_completion(messages, tools)
+        response = await self.chat_client.get_completion(messages, self.tools)
 
         tool_results = []
         final_text = []
