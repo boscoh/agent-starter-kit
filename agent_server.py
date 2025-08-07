@@ -10,6 +10,13 @@ from rich.logging import RichHandler
 
 import agent
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler(rich_tracebacks=True)],
+)
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -85,16 +92,8 @@ async def get_state():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(message)s",
-        datefmt="[%X]",
-        handlers=[RichHandler(rich_tracebacks=True)],
-    )
-
     logging.getLogger("uvicorn").setLevel(logging.ERROR)
     logging.getLogger("uvicorn.access").disabled = True
-
     logger.info("Starting Agent Server...")
     uvicorn.run(
         f"{Path(__file__).stem}:app",

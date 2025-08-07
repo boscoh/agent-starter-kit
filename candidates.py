@@ -10,26 +10,12 @@ from utils import load_json_file
 
 logger = logging.getLogger(__name__)
 
-# Define the possible status values
 CandidateStatus = Literal["available", "requested", "unavailable", "assigned"]
 
 
 class CandidateStore(JsonListStore[dict]):
     def __init__(self, json_file: str = "candidates.json"):
         super().__init__(json_file)
-        self._normalize_candidates()
-
-    def _normalize_candidates(self):
-        for candidate in self.data:
-            if "available" in candidate:
-                if "status" not in candidate:
-                    candidate["status"] = (
-                        "available" if candidate.pop("available") else "unavailable"
-                    )
-                else:
-                    candidate.pop("available")
-            elif "status" not in candidate:
-                candidate["status"] = "available"
 
     def update_candidate_status(
         self, candidate_id: str, status: CandidateStatus, job_id: Optional[str] = None
@@ -52,13 +38,7 @@ class CandidateStore(JsonListStore[dict]):
             return True
         return False
 
-    def clear_messages(self) -> None:
-        for candidate in self.get_list():
-            candidate["status"] = "available"
-            candidate["messages"] = []
-        self.save()
-
-    def async_generate_fake_candidates(self, n: int):
+    def generate_fake_candidates(self, n: int):
         self.data = []
         people = load_json_file("people.json")
         for i in range(n):
@@ -91,23 +71,15 @@ class CandidateStore(JsonListStore[dict]):
         self.save()
 
 
-def main():
-    store = CandidateStore()
-    candidates = store.get_list()
-    logger.info(f"Loaded {len(candidates)} candidates")
-    logger.debug(pretty_repr(candidates))
-    store.async_generate_fake_candidates(5)
-
-
 if __name__ == "__main__":
-    import asyncio
-
     logging.basicConfig(
         level=logging.INFO,
         format="%(message)s",
         datefmt="[%X]",
         handlers=[RichHandler(rich_tracebacks=True)],
     )
-    logger = logging.getLogger(__name__)
-
-    main()
+    store = CandidateStore()
+    candidates = store.get_list()
+    logger.info(f"Loaded {len(candidates)} candidates")
+    logger.debug(pretty_repr(candidates))
+    store.generate_fake_candidates(5)

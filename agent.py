@@ -24,7 +24,10 @@ for job in job_store.get_list():
 job_store.save()
 
 candidate_store = CandidateStore()
-candidate_store.clear_messages()
+for candidate in candidate_store.get_list():
+    candidate["status"] = "available"
+    candidate["messages"] = []
+candidate_store.save()
 
 mcp_chat_client = MCPClient("http://localhost:8080/sse", "ollama")
 
@@ -52,8 +55,7 @@ async def find_candidates_agent(job):
     result = []
     response = ""
     try:
-        prompt = (
-            f"""
+        prompt = f"""
             Give me 2 or 3 candidates who are available for the jobs 
             {job} that have a good match with skills.  
             Be really generous with the matching. 
@@ -78,7 +80,6 @@ async def find_candidates_agent(job):
             Return an empty list if no candidates are available.
             Return as JSON only, and nothing else.
             """
-        )
         response = await mcp_chat_client.process_query(prompt)
         (debug_dir / "find_candidates.txt").write_text(response)
         matches = parse_json_from_response(response)
