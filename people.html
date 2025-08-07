@@ -1,9 +1,9 @@
 <head>
   <!-- avoid text rendering issues on various platforms -->
-  <meta charset="utf-8" />
+  <meta charset="utf-8"/>
 
   <!-- prevent auto-zooming on mobile browsers -->
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
   <!-- Bootstrap for default styles and utility CSS classes -->
   <link
@@ -39,117 +39,118 @@
   <!-- Ky HTTP client -->
   <script type="module">
     import ky from "https://cdn.skypack.dev/ky";
+
     window.ky = ky;
   </script>
 
   <!-- Custom styles for full height and scrollable columns -->
   <style>
-    .scrollable-column {
-      height: 100vh;
-      overflow-y: auto;
-    }
-
-    /* Animation for status changes - light blue */
-    @keyframes highlight-fade-status {
-      from {
-        opacity: 0;
-        background-color: #cce5ff;
+      .scrollable-column {
+          height: 100vh;
+          overflow-y: auto;
       }
-      to {
-        opacity: 1;
-        background-color: #cce5ff;
+
+      /* Animation for status changes - light blue */
+      @keyframes highlight-fade-status {
+          from {
+              opacity: 0;
+              background-color: #cce5ff;
+          }
+          to {
+              opacity: 1;
+              background-color: #cce5ff;
+          }
       }
-    }
 
-    /* Class for status changes */
-    .highlight-fade-status {
-      animation: highlight-fade-status 2s ease-in-out forwards;
-    }
-
-    /* Green fade for replies */
-    .highlight-fade-reply {
-      animation: highlight-fade-green 4s ease-in-out forwards;
-    }
-
-    @keyframes highlight-fade-green {
-      0% {
-        background-color: #66ff66; /* brighter green pop */
-        box-shadow: 0 0 15px #33cc33; /* strong glow */
-        transform: scale(1.02); /* slight "pop out" zoom */
+      /* Class for status changes */
+      .highlight-fade-status {
+          animation: highlight-fade-status 2s ease-in-out forwards;
       }
-      30% {
-        background-color: #b3ffb3;
-        box-shadow: 0 0 8px #70db70;
-        transform: scale(1.01);
+
+      /* Green fade for replies */
+      .highlight-fade-reply {
+          animation: highlight-fade-green 4s ease-in-out forwards;
       }
-      100% {
-        background-color: transparent;
-        box-shadow: none;
-        transform: scale(1);
+
+      @keyframes highlight-fade-green {
+          0% {
+              background-color: #66ff66; /* brighter green pop */
+              box-shadow: 0 0 15px #33cc33; /* strong glow */
+              transform: scale(1.02); /* slight "pop out" zoom */
+          }
+          30% {
+              background-color: #b3ffb3;
+              box-shadow: 0 0 8px #70db70;
+              transform: scale(1.01);
+          }
+          100% {
+              background-color: transparent;
+              box-shadow: none;
+              transform: scale(1);
+          }
       }
-    }
 
-    /* Yellow fade for unread */
-    .highlight-fade-unread {
-      animation: highlight-fade-yellow 4s ease-in-out forwards;
-    }
-
-    @keyframes highlight-fade-yellow {
-      0% {
-        background-color: #fff066; /* bright yellow pop */
-        box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
-        transform: scale(1.02);
+      /* Yellow fade for unread */
+      .highlight-fade-unread {
+          animation: highlight-fade-yellow 4s ease-in-out forwards;
       }
-      30% {
-        background-color: #fff4b3;
-        box-shadow: 0 0 8px #ffeb70;
-        transform: scale(1.01);
+
+      @keyframes highlight-fade-yellow {
+          0% {
+              background-color: #fff066; /* bright yellow pop */
+              box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
+              transform: scale(1.02);
+          }
+          30% {
+              background-color: #fff4b3;
+              box-shadow: 0 0 8px #ffeb70;
+              transform: scale(1.01);
+          }
+          100% {
+              background-color: transparent;
+              box-shadow: none;
+              transform: scale(1);
+          }
       }
-      100% {
-        background-color: transparent;
-        box-shadow: none;
-        transform: scale(1);
+
+      /* Custom styles for email elements */
+      .email-subject {
+          color: #230bc3; /* Light blue */
       }
-    }
 
-    /* Custom styles for email elements */
-    .email-subject {
-      color: #230bc3; /* Light blue */
-    }
+      .email-body {
+          color: #d63384; /* Pink */
+      }
 
-    .email-body {
-      color: #d63384; /* Pink */
-    }
+      .response-text {
+          color: #096809; /* Green */
+      }
 
-    .response-text {
-      color: #096809; /* Green */
-    }
+      .response-card {
+          background-color: #fffacd !important; /* Light yellow */
+      }
 
-    .response-card {
-      background-color: #fffacd !important; /* Light yellow */
-    }
+      /* Animation for new cards */
+      .email-card-enter-active,
+      .email-card-leave-active {
+          transition: all 2s ease;
+          max-height: 1000px; /* Adjust based on your max card height */
+          overflow: hidden;
+      }
 
-    /* Animation for new cards */
-    .email-card-enter-active,
-    .email-card-leave-active {
-      transition: all 2s ease;
-      max-height: 1000px; /* Adjust based on your max card height */
-      overflow: hidden;
-    }
-
-    .email-card-enter,
-    .email-card-leave-to {
-      max-height: 0;
-      opacity: 0;
-      margin: 0 !important;
-      padding: 0 !important;
-      border: none !important;
-    }
+      .email-card-enter,
+      .email-card-leave-to {
+          max-height: 0;
+          opacity: 0;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+      }
   </style>
 </head>
 
 <body>
-  <div id="app"></div>
+<div id="app"></div>
 </body>
 
 <script>
@@ -375,10 +376,7 @@
 
       // Constructor called upon template instantiation
       async mounted() {
-        window.vm = this;
-
         let response = await ky.get("/candidates").json();
-        console.log("candidates", _.cloneDeep(response));
         this.candidates = response;
 
         // Refresh unread emails, candidate replies, and candidate status every second
@@ -395,36 +393,16 @@
             const emails = await ky.get("/emails").json();
             emails.sort(emailReverseTimeCompare);
             this.allEmails = emails;
-            await this.filterUnreadEmails();
-            await this.filterEmailReplies();
+            for (const candidate of this.candidates) {
+              let id = candidate.candidate_id
+              const unreadEmails = emails.filter((e) => !e.read && (e.candidate_id === id));
+              this.$set(this.candidateUnreadEmails, id, unreadEmails);
+              const repliesEmails = emails.filter(e => e.read && e.response && (e.candidate_id === id));
+              const replies = repliesEmails.map(e => e.response.text);
+              this.$set(this.candidateReplies, id, replies);
+            }
           } catch (error) {
             console.error("Error fetching all emails:", error);
-          }
-        },
-
-        async filterUnreadEmails() {
-          for (const candidate of this.candidates) {
-            const unreadEmails = this.allEmails.filter(
-              (e) => !email.read && e.candidate_id === candidate.candidate_id,
-            );
-            this.$set(
-              this.candidateUnreadEmails,
-              candidate.candidate_id,
-              unreadEmails,
-            );
-          }
-        },
-
-        async filterEmailReplies() {
-          for (const candidate of this.candidates) {
-            const repliesEmails = this.allEmails.filter(
-              (e) =>
-                email.read &&
-                email.response &&
-                b(e.candidate_id === candidaxwte.candidate_id),
-            );
-            const replies = repliesEmails.map((email) => email.response.text);
-            this.$set(this.candidateReplies, candidate.candidate_id, replies);
           }
         },
 
@@ -437,6 +415,7 @@
         async fetchCandidateStatus() {
           try {
             const updatedCandidates = await ky.get("/candidates").json();
+            console.log("candidates", _.cloneDeep(updatedCandidates));
             for (const updatedCandidate of updatedCandidates) {
               const candidate = this.candidates.find(
                 (c) => c.candidate_id === updatedCandidate.candidate_id,

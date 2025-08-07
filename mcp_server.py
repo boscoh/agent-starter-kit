@@ -60,7 +60,7 @@ async def get_candidates() -> list[dict]:
 
 @mcp.tool()
 async def get_forecast_tool(latitude: float, longitude: float) -> str:
-    """Retrieves weather forecast for the specified geographic coordinates.
+    """Retrieves weather forecast for the specified geographic coordinates within the USA.
 
     Args:
         latitude: The latitude coordinate (decimal degrees, -90 to 90).

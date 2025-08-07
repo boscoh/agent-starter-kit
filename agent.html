@@ -65,8 +65,12 @@
     }
 
     /* Slide height animation with fade */
-    .light-blue-bg {
-      background-color: rgba(204, 229, 255, 0.3); /* Light blue background */
+    .light-yellow-bg {
+      background-color: #fff4b3;
+    }
+
+    .light-green-bg {
+        background-color: #b3ffb3;
     }
 
     /* For the cards in the offers section */
@@ -178,7 +182,7 @@
                                     | {{ job.skills?.join(' / ') }}
                                   td(style="width: 150px")
                                     template(v-if="job.jobId === state.currentJob.jobId")
-                                      .badge.bg-success AI-AGENT
+                                      .badge.bg-dark AI-AGENT
                                         i.ms-2.fa.fa-user-secret
                                       .pt-1
                                         template(v-for="match in state.currentMatches")
@@ -197,7 +201,7 @@
                         )
                           .card.mb-3(
                             v-for="match in state.matches"
-                            :key="match.name"
+                            :key="match.name + match.jobId"
                           )
                             .card-body
                                 b
@@ -207,18 +211,20 @@
                                 div {{ match.jobId }}
                                 div {{ match.skills?.join(' / ') }}
                                 .small
-                                  ul.mb-0
+                                  ul.mb-2
                                     li.m-0(v-for="(reason, index) in match.reasons" :key="index") {{ reason }}
-                                .badge.bg-success(v-if="!match.sentEmail?.message") AI-AGENT
+                                .badge.bg-dark(v-if="!match.sentEmail?.message") AI-AGENT
                                   i.mx-2.fa.fa-user-secret
                                   | Generating email
                                 transition(name="mycard")
-                                  .light-blue-bg(v-if="match.sentEmail?.message")
+                                  div(v-if="match.sentEmail?.message")
                                     div
-                                      .badge.bg-success AI-AGENT
+                                      .badge.bg-dark AI-AGENT
                                           i.mx-2.fa.fa-user-secret
                                           | Sent email
-                                    .p-2.small.highlight-row
+                                    .p-2.py-1.light-yellow-bg.text-muted(
+                                        style="font-size: 0.75rem;"
+                                    )
                                       | Email: {{ match.sentEmail.message}}
 
                     // Replies column
@@ -236,10 +242,10 @@
                                 i.fa.fa-envelope
                                 | &nbsp; {{ reply.candidate?.name }}
                               div
-                                .badge.bg-success AI-AGENT
+                                .badge.bg-dark AI-AGENT
                                   i.mx-2.fa.fa-user-secret
                                   | interpret
-                                span.ms-2 {{ reply.classification }}
+                                span.ms-2.p-1.text-muted.small.light-green-bg {{ reply.classification }}
 
                 ///// Second tab
                 #second-tab.tab-pane.fade.h-100

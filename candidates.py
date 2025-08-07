@@ -15,7 +15,7 @@ CandidateStatus = Literal["available", "requested", "unavailable", "assigned"]
 
 
 class CandidateStore(JsonListStore[dict]):
-    def __init__(self, json_file: str = "people.json"):
+    def __init__(self, json_file: str = "candidates.json"):
         super().__init__(json_file)
         self._normalize_candidates()
 
@@ -58,31 +58,30 @@ class CandidateStore(JsonListStore[dict]):
             candidate["messages"] = []
         self.save()
 
-    async def async_generate_fake_candidates(self, n: int):
+    def async_generate_fake_candidates(self, n: int):
         self.data = []
-        real_candidates = load_json_file("people.json")
+        people = load_json_file("people.json")
         for i in range(n):
-            candidate = random.choice(real_candidates)
+            person = random.choice(people)
             candidate = {
                 "candidate_id": i + 1,
-                "name": candidate["name"],
+                "name": person["name"],
                 "email": f"user{i}@example.com",
                 "phone": f"+1{random.randint(2000000000, 9999999999)}",
                 "status": "available",
-                "skills": candidate.get("skills", []),
+                "skills": person.get("skills", []),
                 "job_id": None,
             }
             self.data.append(candidate)
         self.save()
-        return self.data
 
 
-async def main():
+def main():
     store = CandidateStore()
     candidates = store.get_list()
     logger.info(f"Loaded {len(candidates)} candidates")
     logger.debug(pretty_repr(candidates))
-    await store.async_generate_fake_candidates(5)
+    store.async_generate_fake_candidates(5)
 
 
 if __name__ == "__main__":
@@ -96,4 +95,4 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
 
-    asyncio.run(main())
+    main()

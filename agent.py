@@ -81,12 +81,12 @@ async def find_candidates_agent(job):
         )
         response = await mcp_chat_client.process_query(prompt)
         (debug_dir / "find_candidates.txt").write_text(response)
-        proposed_candidates = parse_json_from_response(response)
-        if isinstance(proposed_candidates, list):
-            save_json_file(debug_dir / "find_candidates.json", proposed_candidates)
-            result = proposed_candidates
+        matches = parse_json_from_response(response)
+        if isinstance(matches, list):
+            save_json_file(debug_dir / "find_candidates.json", matches)
+            result = matches
         else:
-            logger.error(f"Error getting proposed candidates: {proposed_candidates}")
+            logger.error(f"Error getting proposed candidates: {matches}")
     except Exception as e:
         logger.error(f"Error getting proposed candidates: {e}", exc_info=True)
         logger.error(response)

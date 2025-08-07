@@ -68,8 +68,8 @@ app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 async def read_index():
-    logger.debug("Serving index.html")
-    return FileResponse("index.html")
+    logger.debug("Serving agent.html")
+    return FileResponse("agent.html")
 
 
 @app.get("/tools")

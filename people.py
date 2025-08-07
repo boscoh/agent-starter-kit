@@ -106,9 +106,8 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
         return None
 
     def update_random_statuses(self, change_probability: float = 0.3) -> int:
-        self.load()
         updated_count = 0
-        for candidate in self.data:
+        for candidate in self.get_list():
             if random.random() < change_probability:
                 old_status = candidate["status"]
                 candidate["status"] = (
@@ -118,10 +117,8 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
                     f"Status Update: {candidate['name']} is now {candidate['status']}"
                 )
                 updated_count += 1
-
         if updated_count > 0:
             self.save()
-
         return updated_count
 
     async def poll_and_reply_to_emails(self) -> int:
