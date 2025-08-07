@@ -63,13 +63,28 @@ class CandidateStore(JsonListStore[dict]):
         people = load_json_file("people.json")
         for i in range(n):
             person = random.choice(people)
+            skills = random.sample(
+                [
+                    "Python",
+                    "JavaScript",
+                    "SQL",
+                    "AWS",
+                    "Docker",
+                    "Kubernetes",
+                    "React",
+                    "Django",
+                    "Flask",
+                    "Machine Learning",
+                ],
+                k=random.randint(3, 6),
+            )
             candidate = {
-                "candidate_id": i + 1,
+                "candidate_id": person["candidate_id"],
                 "name": person["name"],
-                "email": f"user{i}@example.com",
-                "phone": f"+1{random.randint(2000000000, 9999999999)}",
+                "email": person["email"],
+                "phone": person["phone"],
                 "status": "available",
-                "skills": person.get("skills", []),
+                "skills": skills,
                 "job_id": None,
             }
             self.data.append(candidate)
