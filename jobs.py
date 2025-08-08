@@ -4,7 +4,7 @@ import os
 import random
 import string
 from typing import Any, Dict, Optional, Set
-
+from path import Path
 from rich.logging import RichHandler
 from rich.pretty import pretty_repr
 
@@ -13,10 +13,10 @@ from utils import load_json_file, parse_json_from_response
 
 
 class JobStore(JsonListStore[Dict[str, Any]]):
-    def __init__(self, json_file: str = "jobs.json"):
+    def __init__(self, json_file: str = None):
+        if json_file is None:
+            json_file = Path(__file__).parent / "jobs.json"
         super().__init__(json_file)
-        self.logger = logging.getLogger(f"{__name__}.JobStore")
-        self.logger.info(f"Initialized JobStore with file: {json_file}")
 
     def update_job_availability(
         self, job_id: str, filled: bool, candidate_id: Optional[str] = None

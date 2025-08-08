@@ -5,6 +5,8 @@ from typing import Literal, Optional
 from rich.logging import RichHandler
 from rich.pretty import pretty_repr
 
+from path import Path
+
 from json_store import JsonListStore
 from utils import load_json_file
 
@@ -14,7 +16,9 @@ CandidateStatus = Literal["available", "requested", "unavailable", "assigned"]
 
 
 class CandidateStore(JsonListStore[dict]):
-    def __init__(self, json_file: str = "candidates.json"):
+    def __init__(self, json_file: str = None):
+        if json_file is None:
+            json_file = Path(__file__).parent / "candidates.json"
         super().__init__(json_file)
 
     def update_candidate_status(

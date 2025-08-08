@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
+from path import Path
 from json_store import JsonListStore
 from utils import _current_timestamp
 
@@ -9,13 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class EmailStore(JsonListStore[Dict[str, Any]]):
-    def __init__(self, filename: str = "emails.json"):
+    def __init__(self, filename: str = None):
+        if filename is None:
+            filename = Path(__file__).parent / "emails.json"
         super().__init__(filename)
-        if not os.path.exists(self.json_file):
-            logger.info(f"Creating new email store at {self.json_file}")
-            self.save()
-        else:
-            logger.debug(f"Loaded existing email store from {self.json_file}")
 
     def _get_next_email_id(self) -> int:
         if not self.data:

@@ -9,7 +9,7 @@ from chat_client import get_chat_client
 from emails import EmailStore
 from json_store import JsonListStore
 from sms import SMSManager
-
+from path import Path
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +30,9 @@ def generate_email_from_name(name: str) -> str:
 
 
 class PeopleStore(JsonListStore[Dict[str, Any]]):
-    def __init__(self, file_path: str = "people.json"):
+    def __init__(self, file_path: str =None):
+        if file_path is None:
+            file_path = Path(__file__).parent / "people.json"
         super().__init__(file_path)
         self.chat_client = get_chat_client("ollama")
         self.email_manager = EmailStore()
