@@ -155,7 +155,6 @@ class MCPClient:
         return "\n".join(final_text)
 
 
-
 async def main():
     logging.basicConfig(
         level=logging.WARNING,

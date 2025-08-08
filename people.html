@@ -1,9 +1,9 @@
 <head>
   <!-- avoid text rendering issues on various platforms -->
-  <meta charset="utf-8"/>
+  <meta charset="utf-8" />
 
   <!-- prevent auto-zooming on mobile browsers -->
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Bootstrap for default styles and utility CSS classes -->
   <link
@@ -45,112 +45,112 @@
 
   <!-- Custom styles for full height and scrollable columns -->
   <style>
-      .scrollable-column {
-          height: 100vh;
-          overflow-y: auto;
-      }
+    .scrollable-column {
+      height: 100vh;
+      overflow-y: auto;
+    }
 
-      /* Animation for status changes - light blue */
-      @keyframes highlight-fade-status {
-          from {
-              opacity: 0;
-              background-color: #cce5ff;
-          }
-          to {
-              opacity: 1;
-              background-color: #cce5ff;
-          }
+    /* Animation for status changes - light blue */
+    @keyframes highlight-fade-status {
+      from {
+        opacity: 0;
+        background-color: #cce5ff;
       }
+      to {
+        opacity: 1;
+        background-color: #cce5ff;
+      }
+    }
 
-      /* Class for status changes */
-      .highlight-fade-status {
-          animation: highlight-fade-status 2s ease-in-out forwards;
-      }
+    /* Class for status changes */
+    .highlight-fade-status {
+      animation: highlight-fade-status 2s ease-in-out forwards;
+    }
 
-      /* Green fade for replies */
-      .highlight-fade-reply {
-          animation: highlight-fade-green 4s ease-in-out forwards;
-      }
+    /* Green fade for replies */
+    .highlight-fade-reply {
+      animation: highlight-fade-green 4s ease-in-out forwards;
+    }
 
-      @keyframes highlight-fade-green {
-          0% {
-              background-color: #66ff66; /* brighter green pop */
-              box-shadow: 0 0 15px #33cc33; /* strong glow */
-              transform: scale(1.02); /* slight "pop out" zoom */
-          }
-          30% {
-              background-color: #b3ffb3;
-              box-shadow: 0 0 8px #70db70;
-              transform: scale(1.01);
-          }
-          100% {
-              background-color: transparent;
-              box-shadow: none;
-              transform: scale(1);
-          }
+    @keyframes highlight-fade-green {
+      0% {
+        background-color: #66ff66; /* brighter green pop */
+        box-shadow: 0 0 15px #33cc33; /* strong glow */
+        transform: scale(1.02); /* slight "pop out" zoom */
       }
+      30% {
+        background-color: #b3ffb3;
+        box-shadow: 0 0 8px #70db70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
 
-      /* Yellow fade for unread */
-      .highlight-fade-unread {
-          animation: highlight-fade-yellow 4s ease-in-out forwards;
-      }
+    /* Yellow fade for unread */
+    .highlight-fade-unread {
+      animation: highlight-fade-yellow 4s ease-in-out forwards;
+    }
 
-      @keyframes highlight-fade-yellow {
-          0% {
-              background-color: #fff066; /* bright yellow pop */
-              box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
-              transform: scale(1.02);
-          }
-          30% {
-              background-color: #fff4b3;
-              box-shadow: 0 0 8px #ffeb70;
-              transform: scale(1.01);
-          }
-          100% {
-              background-color: transparent;
-              box-shadow: none;
-              transform: scale(1);
-          }
+    @keyframes highlight-fade-yellow {
+      0% {
+        background-color: #fff066; /* bright yellow pop */
+        box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
+        transform: scale(1.02);
       }
+      30% {
+        background-color: #fff4b3;
+        box-shadow: 0 0 8px #ffeb70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
 
-      /* Custom styles for email elements */
-      .email-subject {
-          color: #230bc3; /* Light blue */
-      }
+    /* Custom styles for email elements */
+    .email-subject {
+      color: #230bc3; /* Light blue */
+    }
 
-      .email-body {
-          color: #d63384; /* Pink */
-      }
+    .email-body {
+      color: #d63384; /* Pink */
+    }
 
-      .response-text {
-          color: #096809; /* Green */
-      }
+    .response-text {
+      color: #096809; /* Green */
+    }
 
-      .response-card {
-          background-color: #fffacd !important; /* Light yellow */
-      }
+    .response-card {
+      background-color: #fffacd !important; /* Light yellow */
+    }
 
-      /* Animation for new cards */
-      .email-card-enter-active,
-      .email-card-leave-active {
-          transition: all 2s ease;
-          max-height: 1000px; /* Adjust based on your max card height */
-          overflow: hidden;
-      }
+    /* Animation for new cards */
+    .email-card-enter-active,
+    .email-card-leave-active {
+      transition: all 2s ease;
+      max-height: 1000px; /* Adjust based on your max card height */
+      overflow: hidden;
+    }
 
-      .email-card-enter,
-      .email-card-leave-to {
-          max-height: 0;
-          opacity: 0;
-          margin: 0 !important;
-          padding: 0 !important;
-          border: none !important;
-      }
+    .email-card-enter,
+    .email-card-leave-to {
+      max-height: 0;
+      opacity: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
   </style>
 </head>
 
 <body>
-<div id="app"></div>
+  <div id="app"></div>
 </body>
 
 <script>
@@ -394,11 +394,15 @@
             emails.sort(emailReverseTimeCompare);
             this.allEmails = emails;
             for (const candidate of this.candidates) {
-              let id = candidate.candidate_id
-              const unreadEmails = emails.filter((e) => !e.read && (e.candidate_id === id));
+              let id = candidate.candidate_id;
+              const unreadEmails = emails.filter(
+                (e) => !e.read && e.candidate_id === id,
+              );
               this.$set(this.candidateUnreadEmails, id, unreadEmails);
-              const repliesEmails = emails.filter(e => e.read && e.response && (e.candidate_id === id));
-              const replies = repliesEmails.map(e => e.response.text);
+              const repliesEmails = emails.filter(
+                (e) => e.read && e.response && e.candidate_id === id,
+              );
+              const replies = repliesEmails.map((e) => e.response.text);
               this.$set(this.candidateReplies, id, replies);
             }
           } catch (error) {

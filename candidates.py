@@ -2,10 +2,9 @@ import logging
 import random
 from typing import Literal, Optional
 
+from path import Path
 from rich.logging import RichHandler
 from rich.pretty import pretty_repr
-
-from path import Path
 
 from json_store import JsonListStore
 from utils import load_json_file

@@ -1,8 +1,8 @@
 import logging
-import os
 from typing import Any, Dict, List, Optional
 
 from path import Path
+
 from json_store import JsonListStore
 from utils import _current_timestamp
 
