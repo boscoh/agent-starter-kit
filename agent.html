@@ -21,8 +21,8 @@
   <!-- Lodash utility library as _ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
 
-  <!-- Vue 2 framework -->
-  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <!-- Vue 3 framework -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <!-- Pug template compiler -->
   <script src="https://pugjs.org/js/pug.js"></script>
@@ -42,68 +42,95 @@
     window.ky = ky;
   </script>
 
-  <!-- Custom styles for full height and scrollable columns -->
+  <!-- Custom styles -->
   <style>
+    /* ======================
+       GLOBAL LAYOUT
+       ====================== */
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+
+    #app {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .container-fluid {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ======================
+       LAYOUT COMPONENTS
+       ====================== */
     .scrollable-column {
       height: calc(100vh - 80px);
       overflow-y: auto;
     }
 
-    /* Animation for status changes */
-    @keyframes highlight-fade-status {
-      from {
-        opacity: 0;
-      }
-      to {
-        opacity: 1;
-      }
+    .slide-height {
+      transition: height 0.3s ease-in-out;
+      overflow: hidden;
     }
 
-    /* Class for status changes */
-    .highlight-fade-status {
-      animation: highlight-fade-status 2s ease-in-out forwards;
-    }
-
-    /* Slide height animation with fade */
+    /* ======================
+       BACKGROUND COLORS
+       ====================== */
     .light-yellow-bg {
       background-color: #fff4b3;
     }
 
     .light-green-bg {
-        background-color: #b3ffb3;
+      background-color: #b3ffb3;
     }
 
-    /* For the cards in the offers section */
+    /* ======================
+       ANIMATIONS
+       ====================== */
+    
+    /* Status change animation */
+    @keyframes highlight-fade-status {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .highlight-fade-status {
+      animation: highlight-fade-status 2s ease-in-out forwards;
+    }
+
+    /* Card transition animations */
     .mycard-move,
     .mycard-enter-active,
     .mycard-leave-active,
     .mycard-appear,
     .mycard-appear-active {
-      transition: all 0.5s ease;
+      transition: all 2s ease;
     }
+
     .mycard-enter-from,
     .mycard-appear-from {
       opacity: 0;
       transform: translateY(30px);
     }
+
     .mycard-enter-to,
     .mycard-appear-to {
       opacity: 1;
       transform: translateY(0);
     }
+
     .mycard-leave-to {
       opacity: 0;
       transform: translateY(-30px);
     }
+
     .mycard-leave-active {
       position: absolute;
       width: calc(100% - 1.5rem);
-    }
-
-    /* Slide height animation */
-    .slide-height {
-      transition: height 0.3s ease-in-out;
-      overflow: hidden;
     }
   </style>
 </head>
@@ -128,9 +155,9 @@
   }
 
   function init() {
-    new Vue({
-      // Attach template to div with this ID
-      el: "#app",
+    const { createApp } = Vue;
+    
+    createApp({
 
       // Main HTML template but in PUG
       // language=pug
@@ -170,10 +197,11 @@
                             h5 Job Table
                             table.table
                               thead
-                                th job id
-                                th title
-                                th skills
-                                th candidates
+                                tr
+                                  th job id
+                                  th title
+                                  th skills
+                                  th candidates
                               tbody
                                 tr(v-for="job in state.jobs" :key="job.jobId")
                                   td(style="max-width: 120px") {{ job.jobId }} [{{job.status}}]
@@ -197,7 +225,6 @@
                           name="mycard"
                           tag="div"
                           class="d-flex flex-column gap-2"
-                          v-if="state.matches?.length"
                         )
                           .card.mb-2(
                             v-for="match in state.matches"
@@ -239,7 +266,6 @@
                           .card(
                             v-for="reply in state.replies"
                             :key="reply.email?.emailId"
-                            v-if="state.replies?.length"
                           )
                             .card-body
                               span.me-2 {{ reply.jobId }}
@@ -260,12 +286,13 @@
                       .card-body
                         table.table
                           thead
-                            th id
-                            th title
-                            th skills
-                            th status
-                            th jobId
-                            th messages
+                            tr
+                              th id
+                              th title
+                              th skills
+                              th status
+                              th jobId
+                              th messages
                           tbody
                             tr(v-for="c in state.candidates")
                               td(style="max-width: 50px") {{ c.candidateId }}
@@ -296,9 +323,11 @@
                 `),
 
       // Variables available in the template
-      data: {
-        tools: {},
-        state: {},
+      data() {
+        return {
+          tools: {},
+          state: {},
+        };
       },
 
       // Constructor called upon template instantiation
@@ -321,7 +350,7 @@
           this.state = deepCamelCaseKeys(state);
         },
       },
-    });
+    }).mount("#app");
   }
 
   document.addEventListener("DOMContentLoaded", init);
