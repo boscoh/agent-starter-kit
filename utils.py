@@ -1,9 +1,7 @@
 import json
 import re
 from datetime import datetime
-from typing import Any, Type, TypeVar, Union
-
-from path import Path
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
@@ -27,44 +25,6 @@ def parse_json_from_response(response: str):
         return json.loads(json_str)
     except Exception:
         return response.strip()
-
-
-def load_json_file(
-    filepath: Union[str, Path], model: Type[T] = None
-) -> Union[dict, list, T]:
-    filepath = Path(filepath)
-    if not filepath.exists():
-        raise FileNotFoundError(f"File not found: {filepath}")
-
-    if filepath.stat().st_size == 0:
-        return [] if model is None else []
-
-    with open(filepath, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    if model is not None:
-        if isinstance(data, list):
-            return [model.model_validate(item) for item in data]
-        return model.model_validate(data)
-    return data
-
-
-def save_json_file(
-    filepath: Union[str, Path],
-    data: Any,
-    indent: int = 2,
-) -> None:
-    filepath = Path(filepath)
-    if filepath.parent:
-        filepath.parent.makedirs_p()
-
-    with open(filepath, "w", encoding="utf-8") as f:
-        if hasattr(data, "model_dump"):
-            data = data.model_dump()
-        elif isinstance(data, list) and data and hasattr(data[0], "model_dump"):
-            data = [item.model_dump() for item in data]
-
-        json.dump(data, f, indent=indent)
 
 
 def _current_timestamp():

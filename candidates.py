@@ -6,8 +6,7 @@ from path import Path
 from rich.logging import RichHandler
 from rich.pretty import pretty_repr
 
-from json_store import JsonListStore
-from utils import load_json_file
+from json_store import JsonListStore, load_json_file
 
 logger = logging.getLogger(__name__)
 

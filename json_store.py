@@ -1,7 +1,48 @@
+import json
 import os
-from typing import Any, Dict, Generic, List, Optional, TypeVar
+from path import Path
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
-from utils import load_json_file, save_json_file
+T = TypeVar("T")
+
+
+def load_json_file(
+    filepath: Union[str, Path], model: Type[T] = None
+) -> Union[dict, list, T]:
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"File not found: {filepath}")
+
+    if filepath.stat().st_size == 0:
+        return [] if model is None else []
+
+    with open(filepath, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if model is not None:
+        if isinstance(data, list):
+            return [model.model_validate(item) for item in data]
+        return model.model_validate(data)
+    return data
+
+
+def save_json_file(
+    filepath: Union[str, Path],
+    data: Any,
+    indent: int = 2,
+) -> None:
+    filepath = Path(filepath)
+    if filepath.parent:
+        filepath.parent.makedirs_p()
+
+    with open(filepath, "w", encoding="utf-8") as f:
+        if hasattr(data, "model_dump"):
+            data = data.model_dump()
+        elif isinstance(data, list) and data and hasattr(data[0], "model_dump"):
+            data = [item.model_dump() for item in data]
+
+        json.dump(data, f, indent=indent)
+
 
 T = TypeVar("T", bound=Dict[str, Any])
 
