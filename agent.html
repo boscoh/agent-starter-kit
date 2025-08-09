@@ -90,6 +90,13 @@
     }
 
     /* ======================
+       TYPOGRAPHY
+       ====================== */
+    .text-xs {
+      font-size: 0.75rem;
+    }
+
+    /* ======================
        ANIMATIONS
        ====================== */
 
@@ -241,7 +248,7 @@
                                   | &nbsp; {{ match.name }} -
                                   | {{ match.score }}%
                                 div {{ match.skills?.join(' / ') }}
-                                .text-muted(style="font-size: 0.75rem;")
+                                .text-muted.text-xs
                                   ul.mb-2
                                     li.m-0(v-for="(reason, index) in match.reasons" :key="index") {{ reason }}
                                 .badge.bg-dark(v-if="!match.sentEmail?.message") AI-AGENT
@@ -253,9 +260,7 @@
                                       .badge.bg-dark AI-AGENT
                                           i.mx-2.fa.fa-user-secret
                                           | Sent email
-                                    .p-2.py-1.light-yellow-bg.text-muted(
-                                        style="font-size: 0.75rem;"
-                                    )
+                                    .p-2.py-1.light-yellow-bg.text-muted.text-xs
                                       | Email: {{ match.sentEmail.message}}
 
                     // Replies column
