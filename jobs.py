@@ -12,6 +12,7 @@ from rich.pretty import pretty_repr
 from json_store import JsonListStore, load_json_file
 from utils import parse_json_from_response
 
+logger = logging.getLogger(__name__)
 
 class JobStore(JsonListStore[Dict[str, Any]]):
     def __init__(self, json_file: str = None):
@@ -22,13 +23,13 @@ class JobStore(JsonListStore[Dict[str, Any]]):
     def update_job_availability(
         self, job_id: str, filled: bool, candidate_id: Optional[str] = None
     ) -> bool:
-        self.logger.info(
+        logger.info(
             f"Updating job {job_id} availability to {'filled' if filled else 'unfilled'}"
         )
         job = self.get_single("job_id", job_id)
 
         if not job:
-            self.logger.warning(f"Job {job_id} not found for update")
+            logger.warning(f"Job {job_id} not found for update")
             return False
 
         old_status = job.get("status", "unknown")
@@ -37,7 +38,7 @@ class JobStore(JsonListStore[Dict[str, Any]]):
         if not filled:
             removed_candidates = len(job.get("candidate_ids", []))
             job["candidate_ids"] = []
-            self.logger.info(
+            logger.info(
                 f"Job {job_id} marked as unfilled. Removed {removed_candidates} candidates"
             )
         else:
@@ -45,10 +46,10 @@ class JobStore(JsonListStore[Dict[str, Any]]):
                 job["candidate_ids"] = []
             if candidate_id and candidate_id not in job["candidate_ids"]:
                 job["candidate_ids"].append(candidate_id)
-                self.logger.info(f"Added candidate {candidate_id} to job {job_id}")
+                logger.info(f"Added candidate {candidate_id} to job {job_id}")
 
         self.save()
-        self.logger.info(
+        logger.info(
             f"Updated job {job_id} status from {old_status} to {job['status']}"
         )
         return True
