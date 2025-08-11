@@ -208,12 +208,6 @@
     return deepCamelCaseKeys(await ky.get(url).json());
   }
 
-  function reverseTimeCompare(a, b) {
-    const timestampA = new Date(a.timestamp);
-    const timestampB = new Date(b.timestamp);
-    return timestampB - timestampA; // Sort in descending order (newest first)
-  }
-
   function getFirstElement(arr) {
     return !_.isEmpty(arr) ? arr[0] : null;
   }
@@ -445,8 +439,11 @@
         async fetchAllEmails() {
           try {
             const emails = await fetchGetJson("/emails");
-            emails.sort(reverseTimeCompare);
-            this.allEmails = emails;
+            this.allEmails = _.orderBy(
+              emails,
+              [(e) => new Date(e.timestamp)],
+              ['desc']
+            );
             for (const candidate of this.candidates) {
               let id = candidate.candidateId;
               this.candidateUnreadEmails[id] = emails.filter(
@@ -467,20 +464,24 @@
         async fetchAllSms() {
           try {
             const smsMessages = await fetchGetJson("/sms");
-            smsMessages.sort(reverseTimeCompare);
-            this.allSms = smsMessages;
+            this.allSms = _.orderBy(
+              smsMessages,
+              [(e) => new Date(e.timestamp)],
+              ['desc']
+            );
             for (const candidate of this.candidates) {
               const id = candidate.candidateId;
-              this.candidateUnreadSms[id] = smsMessages.filter(
+              this.candidateUnreadSms[id] = _.filter(
+                smsMessages,
                 (s) => !s.read && s.candidateId === id,
               );
-              const repliesSms = smsMessages.filter(
-                (sms) => sms.read && sms.response && sms.candidateId === id,
-              );
-              repliesSms.sort(reverseTimeCompare);
-              this.candidateSmsReplies[id] = repliesSms.map(
-                (sms) => sms.response.text,
-              );
+              this.candidateSmsReplies[id] = _.chain(smsMessages)
+                .filter(
+                  (sms) => sms.read && sms.response && sms.candidateId === id,
+                )
+                .orderBy([(e) => new Date(e.timestamp)], ["desc"])
+                .map((sms) => sms.response.text)
+                .value();
             }
           } catch (error) {
             console.error("Error fetching all SMS messages:", error);
