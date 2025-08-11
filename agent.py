@@ -8,8 +8,8 @@ from pydash import py_
 
 from candidates import CandidateStore
 from jobs import JobStore
-from mcp_client import MCPClient
 from json_store import save_json_file
+from mcp_client import MCPClient
 from utils import parse_json_from_response
 
 logger = logging.getLogger(__name__)

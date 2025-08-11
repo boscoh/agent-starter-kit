@@ -14,6 +14,7 @@ from utils import parse_json_from_response
 
 logger = logging.getLogger(__name__)
 
+
 class JobStore(JsonListStore[Dict[str, Any]]):
     def __init__(self, json_file: str = None):
         if json_file is None:
@@ -49,9 +50,7 @@ class JobStore(JsonListStore[Dict[str, Any]]):
                 logger.info(f"Added candidate {candidate_id} to job {job_id}")
 
         self.save()
-        logger.info(
-            f"Updated job {job_id} status from {old_status} to {job['status']}"
-        )
+        logger.info(f"Updated job {job_id} status from {old_status} to {job['status']}")
         return True
 
     async def async_generate_fake_jobs(self, n: int) -> None:

@@ -36,7 +36,7 @@
     }
 
     // Utility function to truncate text with ellipsis
-    function truncateText(text, maxLength=100) {
+    function truncateText(text, maxLength = 100) {
       if (!text) return "";
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + "...";
@@ -419,7 +419,9 @@
         },
         async fetchCandidateStatus() {
           try {
-            const updatedCandidates = deepCamelCaseKeys(await ky.get("/candidates").json());
+            const updatedCandidates = deepCamelCaseKeys(
+              await ky.get("/candidates").json(),
+            );
             for (const updatedCandidate of updatedCandidates) {
               const candidate = this.candidates.find(
                 (c) => c.candidateId === updatedCandidate.candidateId,
@@ -453,7 +455,9 @@
               const repliesEmails = emails.filter(
                 (e) => e.read && e.response && e.candidateId === id,
               );
-              this.candidateReplies[id] = repliesEmails.map((e) => e.response.text);;
+              this.candidateReplies[id] = repliesEmails.map(
+                (e) => e.response.text,
+              );
             }
           } catch (error) {
             console.error("Error fetching all emails:", error);
@@ -474,7 +478,9 @@
                 (sms) => sms.read && sms.response && sms.candidateId === id,
               );
               repliesSms.sort(reverseTimeCompare);
-              this.candidateSmsReplies[id] = repliesSms.map((sms) => sms.response.text);
+              this.candidateSmsReplies[id] = repliesSms.map(
+                (sms) => sms.response.text,
+              );
             }
           } catch (error) {
             console.error("Error fetching all SMS messages:", error);

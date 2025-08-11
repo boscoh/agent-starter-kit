@@ -1,10 +1,11 @@
-from path import Path
-from people import PeopleStore
-from candidates import CandidateStore
-from jobs import JobStore
 import asyncio
 import logging
+
 from rich.logging import RichHandler
+
+from candidates import CandidateStore
+from jobs import JobStore
+from people import PeopleStore
 
 logging.basicConfig(
     level=logging.INFO,
