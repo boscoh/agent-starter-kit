@@ -1,5 +1,4 @@
 import json
-import os
 from path import Path
 from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 
@@ -48,21 +47,21 @@ T = TypeVar("T", bound=Dict[str, Any])
 
 
 class JsonListStore(Generic[T]):
-    def __init__(self, json_file: str):
-        self.json_file = json_file
-        self.lock_file = f"{json_file}.lock"
+    def __init__(self, json_file: Union[str, Path]):
+        self.json_file = Path(json_file)
+        self.lock_file = self.json_file.parent / f"{self.json_file.name}.lock"
         self.data: List[T] = []
-        if self.json_file and os.path.exists(self.json_file):
+        if self.json_file and self.json_file.exists():
             self.load()
 
-    def load(self, filepath: str = None) -> None:
-        filepath = filepath or self.json_file
+    def load(self, filepath: Union[str, Path] = None) -> None:
+        filepath = Path(filepath) if filepath else self.json_file
         if not filepath:
             self.data = []
             return
 
         try:
-            if os.path.exists(filepath):
+            if filepath.exists():
                 self.data = load_json_file(filepath)
             else:
                 self.data = []
@@ -70,16 +69,20 @@ class JsonListStore(Generic[T]):
             print(f"Error: reading {filepath}: {e}")
             raise
 
-    def save(self, filepath: str = None) -> None:
-        filepath = filepath or self.json_file
+    def save(self, filepath: Union[str, Path] = None) -> None:
+        filepath = Path(filepath) if filepath else self.json_file
         if not filepath:
             return
         try:
-            os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+            filepath.parent.makedirs_p()
             save_json_file(filepath, self.data)
         except Exception as e:
             print(f"Error: saving {filepath}: {e}")
             raise
+
+    def clear(self) -> None:
+        self.data = []
+        self.save()
 
     def get_list(self, field: Optional[str] = None, value: Any = None) -> List[T]:
         self.load()

@@ -41,7 +41,7 @@ class CandidateStore(JsonListStore[dict]):
         return False
 
     def generate_fake_candidates(self):
-        self.data = []
+        self.clear()
         people = load_json_file("people.json")
         for person in people:
             skills = random.sample(

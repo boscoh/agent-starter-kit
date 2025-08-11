@@ -55,7 +55,7 @@ class JobStore(JsonListStore[Dict[str, Any]]):
         return True
 
     async def async_generate_fake_jobs(self, n: int) -> None:
-        self.data = await generate_fake_jobs(n, "candidates.json")
+        self.data.extend(await generate_fake_jobs(n, "candidates.json"))
         self.save()
 
 
