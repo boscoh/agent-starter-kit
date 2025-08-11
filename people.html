@@ -193,17 +193,19 @@
 </body>
 
 <script>
-  function deepCamelCaseKeys(obj) {
-    if (Array.isArray(obj)) {
-      return obj.map((item) => deepCamelCaseKeys(item));
+  function deepCamelCaseKeys(value) {
+    if (_.isArray(value)) {
+      return value.map(deepCamelCaseKeys);
     }
-    if (obj !== null && typeof obj === "object") {
-      return Object.entries(obj).reduce((acc, [key, value]) => {
-        acc[_.camelCase(key)] = deepCamelCaseKeys(value);
-        return acc;
-      }, {});
+    if (_.isPlainObject(value)) {
+      const camelKeyed = _.mapKeys(value, (v, k) => _.camelCase(k));
+      return _.mapValues(camelKeyed, deepCamelCaseKeys);
     }
-    return obj;
+    return value;
+  }
+
+  async function fetchGetJson(url) {
+    return deepCamelCaseKeys(await ky.get(url).json());
   }
 
   function reverseTimeCompare(a, b) {
@@ -266,7 +268,7 @@
                                 // Display the first unread email body (truncated) if available, otherwise show "no unread emails" message
                                 div.border-top.pt-2.mt-2.highlight-fade-unread.text-xs(
                                     v-if="firstUnreadEmail(candidate)"
-                                )    
+                                )
                                     i.far.fa-envelope-open.me-2
                                     span.text-muted Unread emails:
                                     span {{ truncateText(firstUnreadEmail(candidate)) }}
@@ -401,8 +403,7 @@
 
       // Constructor called upon template instantiation
       async mounted() {
-        let response = await ky.get("/candidates").json();
-        this.candidates = response;
+        this.candidates = await fetchGetJson("/candidates");
 
         // Refresh unread emails, candidate replies, and candidate status every second
         setInterval(this.fetchAll, 2000);
@@ -417,18 +418,17 @@
           await this.fetchCandidateStatus();
           await this.fetchAllSms();
         },
+
         async fetchCandidateStatus() {
           try {
-            const updatedCandidates = deepCamelCaseKeys(
-              await ky.get("/candidates").json(),
-            );
+            const updatedCandidates = await fetchGetJson("/candidates");
             for (const updatedCandidate of updatedCandidates) {
               const candidate = this.candidates.find(
                 (c) => c.candidateId === updatedCandidate.candidateId,
               );
               if (candidate && candidate.status !== updatedCandidate.status) {
                 console.log(
-                  `Status change for ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
+                  `Status of ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
                 );
                 candidate.status = updatedCandidate.status;
                 candidate.statusChanged = true;
@@ -444,7 +444,7 @@
 
         async fetchAllEmails() {
           try {
-            const emails = deepCamelCaseKeys(await ky.get("/emails").json());
+            const emails = await fetchGetJson("/emails");
             emails.sort(reverseTimeCompare);
             this.allEmails = emails;
             for (const candidate of this.candidates) {
@@ -466,7 +466,7 @@
 
         async fetchAllSms() {
           try {
-            const smsMessages = await ky.get("/sms").json();
+            const smsMessages = await fetchGetJson("/sms");
             smsMessages.sort(reverseTimeCompare);
             this.allSms = smsMessages;
             for (const candidate of this.candidates) {
