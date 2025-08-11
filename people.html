@@ -34,6 +34,13 @@
       let indentRegex = new RegExp(`^${indents[0]}`, "gm");
       return pug.render(indents ? str.replace(indentRegex, "") : str);
     }
+
+    // Utility function to truncate text with ellipsis
+    function truncateText(text, maxLength=100) {
+      if (!text) return "";
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + "...";
+    }
   </script>
 
   <!-- Ky HTTP client -->
@@ -61,10 +68,6 @@
 
     .text-md {
       font-size: 0.95rem;
-    }
-
-    .small-text {
-      font-size: 0.75rem;
     }
 
     /* Animation for status changes - light blue */
@@ -203,10 +206,14 @@
     return obj;
   }
 
-  function emailReverseTimeCompare(a, b) {
+  function reverseTimeCompare(a, b) {
     const timestampA = new Date(a.timestamp);
     const timestampB = new Date(b.timestamp);
     return timestampB - timestampA; // Sort in descending order (newest first)
+  }
+
+  function getFirstElement(arr) {
+    return !_.isEmpty(arr) ? arr[0] : null;
   }
 
   function init() {
@@ -244,7 +251,7 @@
                           h1 Candidates
                             i.ms-2.fas.fa-laptop
                           .d-flex.flex-row.flex-wrap.gap-3
-                            div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidate_id")
+                            div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
                               .card-body
                                 .h3 {{ candidate.name}}
                                 div
@@ -258,13 +265,13 @@
                                     code {{ candidate.status }}
                                 // Display the first unread email body (truncated) if available, otherwise show "no unread emails" message
                                 div.border-top.pt-2.mt-2.highlight-fade-unread.text-xs(
-                                    v-if="hasUnreadEmails(candidate)"
+                                    v-if="firstUnreadEmail(candidate)"
                                 )    
                                     i.far.fa-envelope-open.me-2
                                     span.text-muted Unread emails:
-                                    span {{ truncateText(candidateUnreadEmails[candidate.candidate_id][0].body, 100) }}
+                                    span {{ truncateText(firstUnreadEmail(candidate)) }}
                                 div.border-top.pt-2.mt-2.text-xs(
-                                    v-if="!hasUnreadEmails(candidate)"
+                                    v-if="!firstUnreadEmail(candidate)"
                                 )
                                     i.far.fa-envelope-open.me-2
                                     span.text-muted Unread emails:
@@ -272,13 +279,13 @@
 
                                 // Display the latest candidate email reply if available, otherwise show "You have no replies" message
                                 div.border-top.pt-2.mt-2.highlight-fade-reply.text-xs(
-                                    v-if="hasEmailReplies(candidate)"
+                                    v-if="firstEmailReply(candidate)"
                                 )
                                     i.far.fa-comment-dots.me-2
                                     span.text-muted Latest email reply:
-                                    span {{ truncateText(candidateReplies[candidate.candidate_id][0], 100) }}
+                                    span {{ truncateText(firstEmailReply(candidate)) }}
                                 div.border-top.pt-2.mt-2.text-xs(
-                                    v-if="!hasEmailReplies(candidate)"
+                                    v-if="!firstEmailReply(candidate)"
                                 )
                                     i.far.fa-comment-dots.me-2
                                     span.text-muted Latest email reply:
@@ -286,13 +293,13 @@
 
                                 // Display the first unread SMS body (truncated) if available, otherwise show "no unread SMS" message
                                 div.border-top.pt-2.mt-2.highlight-fade-unread.text-xs(
-                                    v-if="hasUnreadSms(candidate)"
+                                    v-if="firstUnreadSms(candidate)"
                                 )
                                     i.fas.fa-sms.me-2
                                     span.text-muted Unread SMS:
-                                    span {{ truncateText(candidateUnreadSms[candidate.candidate_id][0].body, 100) }}
+                                    span {{ truncateText(firstUnreadSms(candidate)) }}
                                 div.border-top.pt-2.mt-2.text-xs(
-                                    v-if="!hasUnreadSms(candidate)"
+                                    v-if="!firstUnreadSms(candidate)"
                                 )
                                     i.fas.fa-sms.me-2
                                     span.text-muted Unread SMS:
@@ -300,13 +307,13 @@
 
                                 // Display the latest candidate SMS reply if available, otherwise show "You have no SMS replies" message
                                 div.border-top.pt-2.mt-2.highlight-fade-reply.text-xs(
-                                    v-if="hasSmsReplies(candidate)"
+                                    v-if="firstSmsReply(candidate)"
                                 )
                                     i.fas.fa-reply.me-2
                                     span.text-muted Latest SMS reply:
-                                    span {{ truncateText(candidateSmsReplies[candidate.candidate_id][0].response.text, 100) }}
+                                    span {{ truncateText(firstSmsReply(candidate)) }}
                                 div.border-top.pt-2.mt-2.text-xs(
-                                    v-if="!hasSmsReplies(candidate)"
+                                    v-if="!firstSmsReply(candidate)"
                                 )
                                     i.fas.fa-reply.me-2
                                     span.text-muted Latest SMS reply:
@@ -326,7 +333,7 @@
                                 .card-body.py-2.text-md
                                   div.mb-1
                                     i.far.fa-user.me-2
-                                    span Candidate: {{ getCandidateName(email.candidate_id) }}
+                                    span Candidate: {{ getCandidateName(email.candidateId) }}
                                   div.mb-1
                                     i.far.fa-clock.me-2
                                     span {{ new Date(email.timestamp).toLocaleString() }}
@@ -359,7 +366,7 @@
                               .card-body.py-2.text-md
                                 div.mb-1
                                   i.far.fa-user.me-2
-                                  span Candidate: {{ getCandidateName(sms.candidate_id) }}
+                                  span Candidate: {{ getCandidateName(sms.candidateId) }}
                                 div.mb-1
                                   i.far.fa-clock.me-2
                                   span {{ new Date(sms.timestamp).toLocaleString() }}
@@ -380,7 +387,6 @@
       // Variables available in the template
       data() {
         return {
-          activeTab: "first-tab",
           candidates: [],
           candidateUnreadEmails: {}, // Store unread emails for each candidate
           candidateReplies: {}, // Store candidate replies from read emails
@@ -399,32 +405,28 @@
         this.candidates = response;
 
         // Refresh unread emails, candidate replies, and candidate status every second
-        setInterval(async () => {
-          await this.fetchAllEmails();
-          await this.fetchCandidateStatus();
-          await this.fetchAllSms();
-        }, 2000);
+        setInterval(this.fetchAll, 2000);
       },
 
       // Methods available in the template
       methods: {
-        truncateText(text, maxLength) {
-          if (!text) return "";
-          if (text.length <= maxLength) return text;
-          return text.substring(0, maxLength) + "...";
-        },
+        truncateText,
 
+        async fetchAll() {
+          await this.fetchAllEmails();
+          await this.fetchCandidateStatus();
+          await this.fetchAllSms();
+        },
         async fetchCandidateStatus() {
           try {
-            const updatedCandidates = await ky.get("/candidates").json();
-            console.log("candidates", _.cloneDeep(updatedCandidates));
+            const updatedCandidates = deepCamelCaseKeys(await ky.get("/candidates").json());
             for (const updatedCandidate of updatedCandidates) {
               const candidate = this.candidates.find(
-                (c) => c.candidate_id === updatedCandidate.candidate_id,
+                (c) => c.candidateId === updatedCandidate.candidateId,
               );
               if (candidate && candidate.status !== updatedCandidate.status) {
                 console.log(
-                  `Status change detected for ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
+                  `Status change for ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
                 );
                 candidate.status = updatedCandidate.status;
                 candidate.statusChanged = true;
@@ -440,87 +442,71 @@
 
         async fetchAllEmails() {
           try {
-            const emails = await ky.get("/emails").json();
-            emails.sort(emailReverseTimeCompare);
+            const emails = deepCamelCaseKeys(await ky.get("/emails").json());
+            emails.sort(reverseTimeCompare);
             this.allEmails = emails;
             for (const candidate of this.candidates) {
-              let id = candidate.candidate_id;
-              const unreadEmails = emails.filter(
-                (e) => !e.read && e.candidate_id === id,
+              let id = candidate.candidateId;
+              this.candidateUnreadEmails[id] = emails.filter(
+                (e) => !e.read && e.candidateId === id,
               );
-              this.candidateUnreadEmails[id] = unreadEmails;
               const repliesEmails = emails.filter(
-                (e) => e.read && e.response && e.candidate_id === id,
+                (e) => e.read && e.response && e.candidateId === id,
               );
-              const replies = repliesEmails.map((e) => e.response.text);
-              this.candidateReplies[id] = replies;
+              this.candidateReplies[id] = repliesEmails.map((e) => e.response.text);;
             }
           } catch (error) {
             console.error("Error fetching all emails:", error);
           }
         },
 
-        // Helper method to get candidate name by ID
-        getCandidateName(candidateId) {
-          const candidate = this.candidates.find(
-            (c) => c.candidate_id === candidateId,
-          );
-          return candidate ? candidate.name : "Unknown Candidate";
-        },
-
         async fetchAllSms() {
           try {
             const smsMessages = await ky.get("/sms").json();
-            smsMessages.sort(
-              (a, b) => new Date(b.timestamp) - new Date(a.timestamp),
-            );
+            smsMessages.sort(reverseTimeCompare);
             this.allSms = smsMessages;
-
             for (const candidate of this.candidates) {
-              const id = candidate.candidate_id;
-
-              const unreadSms = smsMessages.filter(
-                (sms) => !sms.read && sms.candidate_id === id,
+              const id = candidate.candidateId;
+              this.candidateUnreadSms[id] = smsMessages.filter(
+                (s) => !s.read && s.candidateId === id,
               );
-              this.candidateUnreadSms[id] = unreadSms;
-
               const repliesSms = smsMessages.filter(
-                (sms) => sms.read && sms.response && sms.candidate_id === id,
+                (sms) => sms.read && sms.response && sms.candidateId === id,
               );
-              repliesSms.sort(
-                (a, b) =>
-                  new Date(b.response.timestamp) -
-                  new Date(a.response.timestamp),
-              );
-              const replies = repliesSms.map((sms) => sms.response.text);
-              this.candidateSmsReplies[id] = replies;
+              repliesSms.sort(reverseTimeCompare);
+              this.candidateSmsReplies[id] = repliesSms.map((sms) => sms.response.text);
             }
           } catch (error) {
             console.error("Error fetching all SMS messages:", error);
           }
         },
 
-        hasUnreadEmails(candidate) {
-          const unreadEmails =
-            this.candidateUnreadEmails[candidate.candidate_id];
-          return unreadEmails && unreadEmails.length > 0;
-        },
-
-        hasSmsReplies(candidate) {
-          const smsReplies = this.candidateSmsReplies[candidate.candidate_id];
-          return smsReplies && smsReplies.length > 0;
-        },
-
-        hasUnreadSms(candidate) {
-          const unreadSms = this.candidateUnreadSms[candidate.candidate_id];
-          return unreadSms && unreadSms.length > 0;
-        },
-
-        hasEmailReplies(candidate) {
-          return (
-            this.candidateReplies[candidate.candidate_id] &&
-            this.candidateReplies[candidate.candidate_id].length > 0
+        getCandidateName(candidateId) {
+          const candidate = this.candidates.find(
+            (c) => c.candidateId === candidateId,
           );
+          return candidate ? candidate.name : "Unknown Candidate";
+        },
+
+        firstUnreadEmail(candidate) {
+          const unreadEmails =
+            this.candidateUnreadEmails[candidate.candidateId];
+          return getFirstElement(unreadEmails)?.body;
+        },
+
+        firstSmsReply(candidate) {
+          const smsReplies = this.candidateSmsReplies[candidate.candidateId];
+          return getFirstElement(smsReplies)?.response?.text;
+        },
+
+        firstUnreadSms(candidate) {
+          const unreadSms = this.candidateUnreadSms[candidate.candidateId];
+          return getFirstElement(unreadSms)?.body;
+        },
+
+        firstEmailReply(candidate) {
+          const repliesEmails = this.candidateReplies[candidate.candidateId];
+          return getFirstElement(repliesEmails)?.response?.text;
         },
       },
     }).mount("#app");
