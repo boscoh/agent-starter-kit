@@ -12,7 +12,6 @@ from openai.types.chat import (
     ChatCompletionToolMessageParam,
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
-    ChatCompletionFunctionTool,
 )
 
 load_dotenv()
@@ -155,7 +154,6 @@ class OpenAIChatClient(IChatClient):
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
-
         def sync_call():
             return self.client.chat.completions.create(
                 model=self.model,

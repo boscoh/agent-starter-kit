@@ -75,7 +75,9 @@ class JsonListStore(Generic[T]):
         if not filepath:
             return
         try:
-            filepath.parent.makedirs_p()
+            parent = filepath.parent
+            if parent:
+                filepath.parent.makedirs_p()
             save_json_file(filepath, self.data)
         except Exception as e:
             print(f"Error: saving {filepath}: {e}")
