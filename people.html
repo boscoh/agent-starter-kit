@@ -212,10 +212,140 @@
     return !_.isEmpty(arr) ? arr[0] : null;
   }
 
+  function getDate(email) {
+    return new Date(email.timestamp);
+  }
+
   function init() {
     const { createApp } = Vue;
 
     createApp({
+      // Variables available in the template
+      data() {
+        return {
+          candidates: [],
+          candidateUnreadEmails: {}, // Store unread emails for each candidate
+          candidateReplies: {}, // Store candidate replies from read emails
+          allEmails: [], // Store all emails for the Emails tab
+          candidateUnreadSms: {}, // Store unread SMS for each candidate
+          candidateSmsReplies: {}, // Store candidate replies from read SMS
+          allSms: [], // Store all SMS for the SMS tab
+          lastSeenReplies: {}, // { candidateId: "last reply text" }
+          lastSeenSmsReplies: {},
+        };
+      },
+
+      // Constructor called upon template instantiation
+      async mounted() {
+        this.candidates = await fetchGetJson("/candidates");
+
+        // Refresh unread emails, candidate replies, and candidate status every second
+        setInterval(this.fetchAll, 2000);
+      },
+
+      // Methods available in the template
+      methods: {
+        truncateText,
+
+        async fetchAll() {
+          await this.fetchAllEmails();
+          await this.fetchCandidateStatus();
+          await this.fetchAllSms();
+        },
+
+        async fetchCandidateStatus() {
+          try {
+            const updatedCandidates = await fetchGetJson("/candidates");
+            for (const updatedCandidate of updatedCandidates) {
+              const candidate = this.candidates.find(
+                (c) => c.candidateId === updatedCandidate.candidateId,
+              );
+              if (candidate && candidate.status !== updatedCandidate.status) {
+                console.log(
+                  `Status of ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
+                );
+                candidate.status = updatedCandidate.status;
+                candidate.statusChanged = true;
+                setTimeout(() => {
+                  candidate.statusChanged = false;
+                }, 3000);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching candidate status:", error);
+          }
+        },
+
+        async fetchAllEmails() {
+          try {
+            const emails = await fetchGetJson("/emails");
+            this.allEmails = _.orderBy(emails, [getDate], ["desc"]);
+            for (const candidate of this.candidates) {
+              let id = candidate.candidateId;
+              this.candidateUnreadEmails[id] = _.filter(
+                emails,
+                (e) => !e.read && e.candidateId === id,
+              );
+              this.candidateReplies[id] = _.chain(emails)
+                .filter((e) => e.read && e.response && e.candidateId === id)
+                .map((e) => e.response.text)
+                .value();
+            }
+          } catch (error) {
+            console.error("Error fetching all emails:", error);
+          }
+        },
+
+        async fetchAllSms() {
+          try {
+            const smsMessages = await fetchGetJson("/sms");
+            this.allSms = _.orderBy(smsMessages, [getDate], ["desc"]);
+            for (const candidate of this.candidates) {
+              const id = candidate.candidateId;
+              this.candidateUnreadSms[id] = _.filter(
+                smsMessages,
+                (s) => !s.read && s.candidateId === id,
+              );
+              this.candidateSmsReplies[id] = _.chain(smsMessages)
+                .filter((s) => s.read && s.response && s.candidateId === id)
+                .orderBy([(e) => new Date(e.timestamp)], ["desc"])
+                .map((s) => s.response.text)
+                .value();
+            }
+          } catch (error) {
+            console.error("Error fetching all SMS messages:", error);
+          }
+        },
+
+        getCandidateName(candidateId) {
+          const candidate = this.candidates.find(
+            (c) => c.candidateId === candidateId,
+          );
+          return candidate ? candidate.name : "Unknown Candidate";
+        },
+
+        firstUnreadEmail(candidate) {
+          const unreadEmails =
+            this.candidateUnreadEmails[candidate.candidateId];
+          return getFirstElement(unreadEmails)?.body;
+        },
+
+        firstSmsReply(candidate) {
+          const smsReplies = this.candidateSmsReplies[candidate.candidateId];
+          return getFirstElement(smsReplies)?.response?.text;
+        },
+
+        firstUnreadSms(candidate) {
+          const unreadSms = this.candidateUnreadSms[candidate.candidateId];
+          return getFirstElement(unreadSms)?.body;
+        },
+
+        firstEmailReply(candidate) {
+          const repliesEmails = this.candidateReplies[candidate.candidateId];
+          return getFirstElement(repliesEmails)?.response?.text;
+        },
+      },
+
       // Main HTML template but in PUG
       // language=pug
       template: renderPug(/* pug */ `
@@ -325,7 +455,7 @@
                             i.ms-2.fas.fa-envelope
                           .d-flex.flex-column.gap-2
                             transition-group(name="email-card" tag="div" style="width: 100%;")
-                              .card.mb-2(v-for="email in allEmails" :key="email.email_id" style="width: 100%;")
+                              .card.mb-2(v-for="email in allEmails" :key="email.emailId" style="width: 100%;")
                                 .card-body.py-2.text-md
                                   div.mb-1
                                     i.far.fa-user.me-2
@@ -379,143 +509,6 @@
                                         i.far.fa-clock.me-2
                                         span {{ new Date(sms.response.timestamp).toLocaleString() }}
               `),
-
-      // Variables available in the template
-      data() {
-        return {
-          candidates: [],
-          candidateUnreadEmails: {}, // Store unread emails for each candidate
-          candidateReplies: {}, // Store candidate replies from read emails
-          allEmails: [], // Store all emails for the Emails tab
-          candidateUnreadSms: {}, // Store unread SMS for each candidate
-          candidateSmsReplies: {}, // Store candidate replies from read SMS
-          allSms: [], // Store all SMS for the SMS tab
-          lastSeenReplies: {}, // { candidateId: "last reply text" }
-          lastSeenSmsReplies: {},
-        };
-      },
-
-      // Constructor called upon template instantiation
-      async mounted() {
-        this.candidates = await fetchGetJson("/candidates");
-
-        // Refresh unread emails, candidate replies, and candidate status every second
-        setInterval(this.fetchAll, 2000);
-      },
-
-      // Methods available in the template
-      methods: {
-        truncateText,
-
-        async fetchAll() {
-          await this.fetchAllEmails();
-          await this.fetchCandidateStatus();
-          await this.fetchAllSms();
-        },
-
-        async fetchCandidateStatus() {
-          try {
-            const updatedCandidates = await fetchGetJson("/candidates");
-            for (const updatedCandidate of updatedCandidates) {
-              const candidate = this.candidates.find(
-                (c) => c.candidateId === updatedCandidate.candidateId,
-              );
-              if (candidate && candidate.status !== updatedCandidate.status) {
-                console.log(
-                  `Status of ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
-                );
-                candidate.status = updatedCandidate.status;
-                candidate.statusChanged = true;
-                setTimeout(() => {
-                  candidate.statusChanged = false;
-                }, 3000);
-              }
-            }
-          } catch (error) {
-            console.error("Error fetching candidate status:", error);
-          }
-        },
-
-        async fetchAllEmails() {
-          try {
-            const emails = await fetchGetJson("/emails");
-            this.allEmails = _.orderBy(
-              emails,
-              [(e) => new Date(e.timestamp)],
-              ['desc']
-            );
-            for (const candidate of this.candidates) {
-              let id = candidate.candidateId;
-              this.candidateUnreadEmails[id] = emails.filter(
-                (e) => !e.read && e.candidateId === id,
-              );
-              const repliesEmails = emails.filter(
-                (e) => e.read && e.response && e.candidateId === id,
-              );
-              this.candidateReplies[id] = repliesEmails.map(
-                (e) => e.response.text,
-              );
-            }
-          } catch (error) {
-            console.error("Error fetching all emails:", error);
-          }
-        },
-
-        async fetchAllSms() {
-          try {
-            const smsMessages = await fetchGetJson("/sms");
-            this.allSms = _.orderBy(
-              smsMessages,
-              [(e) => new Date(e.timestamp)],
-              ['desc']
-            );
-            for (const candidate of this.candidates) {
-              const id = candidate.candidateId;
-              this.candidateUnreadSms[id] = _.filter(
-                smsMessages,
-                (s) => !s.read && s.candidateId === id,
-              );
-              this.candidateSmsReplies[id] = _.chain(smsMessages)
-                .filter(
-                  (sms) => sms.read && sms.response && sms.candidateId === id,
-                )
-                .orderBy([(e) => new Date(e.timestamp)], ["desc"])
-                .map((sms) => sms.response.text)
-                .value();
-            }
-          } catch (error) {
-            console.error("Error fetching all SMS messages:", error);
-          }
-        },
-
-        getCandidateName(candidateId) {
-          const candidate = this.candidates.find(
-            (c) => c.candidateId === candidateId,
-          );
-          return candidate ? candidate.name : "Unknown Candidate";
-        },
-
-        firstUnreadEmail(candidate) {
-          const unreadEmails =
-            this.candidateUnreadEmails[candidate.candidateId];
-          return getFirstElement(unreadEmails)?.body;
-        },
-
-        firstSmsReply(candidate) {
-          const smsReplies = this.candidateSmsReplies[candidate.candidateId];
-          return getFirstElement(smsReplies)?.response?.text;
-        },
-
-        firstUnreadSms(candidate) {
-          const unreadSms = this.candidateUnreadSms[candidate.candidateId];
-          return getFirstElement(unreadSms)?.body;
-        },
-
-        firstEmailReply(candidate) {
-          const repliesEmails = this.candidateReplies[candidate.candidateId];
-          return getFirstElement(repliesEmails)?.response?.text;
-        },
-      },
     }).mount("#app");
   }
 

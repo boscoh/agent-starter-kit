@@ -82,7 +82,7 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
         self.save()
         return new_candidate
 
-    def generate_fake_candidates(self, n: int = 5):
+    def generate_fake_people(self, n: int = 5):
         self.load()
         fake = Faker()
         for _ in range(n):
@@ -186,4 +186,4 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger(__name__)
     manager = PeopleStore()
-    manager.generate_fake_candidates(5)
+    manager.generate_fake_people(5)

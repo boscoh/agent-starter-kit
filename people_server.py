@@ -133,7 +133,7 @@ async def generate_candidates(count: int):
     Returns:
         dict: Message and list of generated candidates
     """
-    new_candidates = people_manager.generate_fake_candidates(count)
+    new_candidates = people_manager.generate_fake_people(count)
     return {
         "message": f"{count} fake candidates generated successfully",
         "candidates": new_candidates,

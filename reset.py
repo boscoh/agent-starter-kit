@@ -16,7 +16,7 @@ logging.basicConfig(
 
 people_store = PeopleStore()
 people_store.clear()
-people_store.generate_fake_candidates(5)
+people_store.generate_fake_people(5)
 people_store.save()
 
 candidate_store = CandidateStore()
