@@ -218,7 +218,6 @@
         div.container-fluid.h-100
           .row.h-100
             .col-12
-
               // Tab navigation
               ul.nav.nav-tabs.mt-3
                 li.nav-item
@@ -321,7 +320,7 @@
                                   div.mb-1
                                     i.far.fa-clock.me-2
                                     span {{ new Date(email.timestamp).toLocaleString() }}
-                                  .card.email-message
+                                  .card.email-card
                                     .card-body.py-2
                                       .h6.mb-1 {{ email.subject }}
                                       p.mb-1 {{ email.body }}
@@ -375,18 +374,9 @@
 
 <!-- Custom styles for full height and scrollable columns -->
 <style>
-  .scrollable-column {
-    height: 100vh;
-    overflow-y: auto;
-  }
-
   /* Font size classes */
   .text-xs {
     font-size: 0.75rem;
-  }
-
-  .text-sm {
-    font-size: 0.85rem;
   }
 
   .text-md {
@@ -456,13 +446,8 @@
     }
   }
 
-  .email-message {
+  .email-card {
     background-color: #fffacd; /* Light yellow */
-    border-radius: 0.5rem;
-  }
-
-  .response-card {
-    background-color: #d4edda !important; /* Light green */
     border-radius: 0.5rem;
   }
 
@@ -484,6 +469,11 @@
   .email-card-enter-active,
   .email-card-leave-active {
     transition: all 2s ease-in-out;
+  }
+
+  .response-card {
+      background-color: #d4edda !important; /* Light green */
+      border-radius: 0.5rem;
   }
 
   .response-card-enter-from,
