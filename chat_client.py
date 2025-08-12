@@ -1,7 +1,19 @@
+import asyncio
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
 
+import ollama
 from dotenv import load_dotenv
+from openai import OpenAI
+from openai.types.chat import (
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionToolMessageParam,
+    ChatCompletionToolParam,
+    ChatCompletionUserMessageParam,
+    ChatCompletionFunctionTool,
+)
 
 load_dotenv()
 
@@ -31,8 +43,6 @@ class IChatClient(ABC):
 
 class OllamaChatClient(IChatClient):
     def __init__(self, model: str = "llama3.2"):
-        import ollama
-
         self.model = model
         self.client = ollama.AsyncClient()
 
@@ -54,17 +64,7 @@ class OllamaChatClient(IChatClient):
                 and hasattr(response.message, "tool_calls")
                 and response.message.tool_calls
             ):
-                for tool_call in response.message.tool_calls:
-                    tool_calls.append(
-                        {
-                            "id": getattr(tool_call, "id", ""),
-                            "type": "function",
-                            "function": {
-                                "name": tool_call.function.name,
-                                "arguments": tool_call.function.arguments or {},
-                            },
-                        }
-                    )
+                tool_calls = [call.model_dump() for call in response.message.tool_calls]
 
             response_text = (
                 getattr(response.message, "content", "")
@@ -102,35 +102,68 @@ class OllamaChatClient(IChatClient):
 
 
 class OpenAIChatClient(IChatClient):
-    def __init__(self, model: str = "gpt-4o", max_tokens: int = 1000):
-        import os
-
-        from openai import OpenAI
-
+    def __init__(self, model: str = "o4-mini"):
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is not set.")
         self.client = OpenAI(api_key=api_key)
         self.model = model
-        self.max_tokens = max_tokens
+
+    @staticmethod
+    def convert_message(msg: Dict[str, Any]):
+        role = msg.get("role")
+        content = msg.get("content", "")
+        if role == "system":
+            return ChatCompletionSystemMessageParam(role=role, content=content)
+        elif role == "user":
+            return ChatCompletionUserMessageParam(role=role, content=content)
+        elif role == "assistant":
+            return ChatCompletionAssistantMessageParam(
+                role=role,
+                content=content,
+                tool_calls=msg.get("tool_calls"),
+            )
+        elif role == "tool":
+            return ChatCompletionToolMessageParam(
+                role=role,
+                content=content,
+                tool_call_id=msg.get("tool_call_id"),
+            )
+        else:
+            raise ValueError(f"Unsupported message role: {role}")
+
+    @staticmethod
+    def convert_tools(
+        tools: Optional[List[Dict[str, Any]]],
+    ) -> Optional[List[ChatCompletionToolParam]]:
+        if not tools:
+            return None
+        return [
+            ChatCompletionToolParam(
+                type="function",
+                function={
+                    "name": tool["function"]["name"],
+                    "description": tool["function"].get("description", ""),
+                    "parameters": tool["function"].get("parameters", {}),
+                },
+            )
+            for tool in tools
+        ]
 
     async def get_completion(
         self,
         messages: List[Dict[str, Any]],
         tools: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
-        import asyncio
-
-        loop = asyncio.get_event_loop()
 
         def sync_call():
             return self.client.chat.completions.create(
                 model=self.model,
-                max_tokens=self.max_tokens,
-                messages=messages,
-                tools=tools,
+                messages=[self.convert_message(msg) for msg in messages],
+                tools=self.convert_tools(tools),
             )
 
+        loop = asyncio.get_event_loop()
         completion = await loop.run_in_executor(None, sync_call)
         message = completion.choices[0].message if completion.choices else {}
         text = message.content if hasattr(message, "content") else ""
@@ -138,17 +171,7 @@ class OpenAIChatClient(IChatClient):
 
         tool_calls = []
         if hasattr(message, "tool_calls") and message.tool_calls:
-            tool_calls = [
-                {
-                    "id": call.id,
-                    "type": call.type,
-                    "function": {
-                        "name": call.function.name,
-                        "arguments": call.function.arguments,
-                    },
-                }
-                for call in message.tool_calls
-            ]
+            tool_calls = [call.to_dict() for call in message.tool_calls]
 
         return {
             "text": text,
