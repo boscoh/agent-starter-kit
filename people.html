@@ -260,47 +260,32 @@
                                 // Display the first unread email body (truncated) if available,
                                 // otherwise show "no unread emails" message
                                 .border-top.pt-2.mt-2.text-xs
-                                  .highlight-fade-unread( v-if="firstUnreadEmail(candidate.candidateId)" )
+                                  div(:class="[firstUnreadEmail(candidate.candidateId) ? 'highlight-fade-unread': '']")
                                       i.far.fa-envelope-open.me-2
                                       span.text-muted Unread emails:
                                       span {{ firstUnreadEmail(candidate.candidateId) }}
-                                  div( v-if="!firstUnreadEmail(candidate.candidateId)" )
-                                      i.far.fa-envelope-open.me-2
-                                      span.text-muted Unread emails:
-                                      span You have no unread emails
 
                                 // Display the latest candidate email reply if available, otherwise show "You have no replies" message
                                 .border-top.pt-2.mt-2.text-xs
-                                  .highlight-fade-reply( v-if="firstEmailReply(candidate.candidateId)" )
+                                  div(:class="[firstEmailReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
                                       i.far.fa-comment-dots.me-2
                                       span.text-muted Latest email reply:
                                       span {{ firstEmailReply(candidate.candidateId) }}
-                                  div( v-if="!firstEmailReply(candidate.candidateId)" )
-                                      i.far.fa-comment-dots.me-2
-                                      span.text-muted Latest email reply:
-                                      span You have no email replies
 
                                 // Display the first unread SMS body (truncated) if available, otherwise show "no unread SMS" message
                                 .border-top.pt-2.mt-2.text-xs
-                                  .highlight-fade-unread( v-if="firstUnreadSms(candidate.candidateId)" )
+                                  div(:class="[firstUnreadSms(candidate.candidateId) ? 'highlight-fade-unread': '']")
                                       i.fas.fa-sms.me-2
                                       span.text-muted Unread SMS:
                                       span {{ firstUnreadSms(candidate.candidateId) }}
-                                  div( v-if="!firstUnreadSms(candidate.candidateId)" )
-                                      i.fas.fa-sms.me-2
-                                      span.text-muted Unread SMS:
-                                      span You have no unread SMS
 
                                 // Display the latest candidate SMS reply if available, otherwise show "You have no SMS replies" message
                                 .border-top.pt-2.mt-2.text-xs
-                                  .highlight-fade-reply( v-if="firstSmsReply(candidate.candidateId)")
+                                  div(:class="[firstSmsReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
                                       i.fas.fa-reply.me-2
                                       span.text-muted Latest SMS reply:
                                       span {{ firstSmsReply(candidate.candidateId) }}
-                                  div( v-if="!firstSmsReply(candidate.candidateId)" )
-                                      i.fas.fa-reply.me-2
-                                      span.text-muted Latest SMS reply:
-                                      span You have no SMS replies
+
 
                 ///// Second tab
                 #second-tab.tab-pane.fade.h-100
