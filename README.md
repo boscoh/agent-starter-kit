@@ -1,88 +1,116 @@
-# Job Adder AI Outreach Agent PoC
+# Agent Starter Kit
 
-An AI-powered Outreach Agent that can autonomously choose candidate matches
-for a job and communicate via a simple message service.
+An AI-powered Agent that autonomously matches candidates to job opportunities and handles initial communications.
 
-Demonstrates a simple autonomous agent control loop, and their interaction
-with an MCP server.
+## Features
+
+- Autonomous agent control loop
+- MCP driven candidate-job matching
+- Autnomous AI-powered communication 
+- Simple message service integration
 
 ## Prerequisites
 
+- Python 3.8+
 - [UV](https://github.com/astral-sh/uv) package manager
-- Ollama or OPENAI_API_KEY in the environment
+- Ollama or an OpenAI API key in `.env`
 
-## Installation
+## 🚀 Quick Start
 
-1. Install dependencies:
+1. **Install dependencies**
+   ```bash
+   uv sync
+   ```
 
-```bash
-uv sync
-```
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env and add your OPENAI_API_KEY
+   ```
 
-2. Copy the example environment file and update with your API key:
+3. **Initialize Data**
+   ```bash
+   uv run reset.py
+   ```
 
-```bash
-cp .env.example .env
-# OPENAI_API_KEY=<your OpenAI API key>
-```
+## 🏃‍♂️ Running the System
 
-3. Create random Outreach Agent's candidates in the db
+### Option 1: Manual Startup (Recommended for Development)
 
-```bash
-uv run people.py
-```
+1. **People Server** (handles candidate data)
+   ```bash
+   # In a new terminal
+   rm -f emails.json*  # Clear any existing email data
+   uv run people_server.py
+   ```
 
-4. Create random Outreach Agent's jobs in the db
+2. **MCP Server** (message control protocol)
+   ```bash
+   # In a new terminal
+   uv run mcp_server.py
+   ```
 
-```bash
-uv run jobs.py
-```
+3. **Agent Server** (main application)
+   ```bash
+   # In a new terminal
+   uv run agent_server.py --reload  # Auto-reload for development
+   ```
 
-## Usage
+### Option 2: Quick Start (Requires `ttab`)
 
-For Outreach Agent PoC to work, we need 3 servers running, 1) the Candidate simulator;
-2) the MCP server and 3) the Outreach Agent Server.
+1. Install ttab (if not already installed):
+   ```bash
+   npm install -g ttab
+   ```
 
-
-1. the People simulator `../pycandidate/simulator/app.py`:
-
-       cd ../pycandidatesimulatr
-       uv run uvicorn app:app --reload
-
-2. the MCP server:
-
-       uv run mcp_server.py
-
-3. the Agent server, which will run the agent and a GUI:
-
-       uv run agent_server.py
-
-4. open the people simulator GUI:
-
-       http://localhost:8000
-
-5. open the Outreach Agent GUI:
-
-       http://localhost:3000
-
-This will start the agent server with the default configuration and open `index.html` in your browser to interact with the agent through the web interface.
-
-## Dev startup
-
-If you can install `ttab` with `npm`, you can start all 3 servers, and
-open the two GUI via one cli command:
-
-    ./start.sh
-
+2. Run the start script:
+   ```bash
+   chmod +x start.sh  # Make script executable if needed
+   ./start.sh
+   ```
+   This will start all services and open the web interfaces in your browser.
 
 ## Project Structure
 
-- `agent.py`: Core agent implementation
-- `agent_server.py`: HTTP server for the agent, and agent loop runner
-- `chat_client.py`: Chat client interface
-- `mcp_client.py`: MCP client connects to MCP server and chat_client
-- `mcp_server.py`: MCP server that connects to jobs and candidates
-- `jobs.py`: Manages Jobs database
-- `candidates.py`: Manages Candidates database
-- `index.html`: GUI to the Outreach Agent
+```
+.
+├── agent.py           # Main agent implementation
+├── agent_server.py    # Web server and agent loop runner
+├── mcp_client.py      # MCP client connects to MCP server and chat_client
+├── mcp_server.py      # MCP protocol server
+├── people.py          # Candidate management
+├── people_server.py   # HTTP server for candidate data
+├── jobs.py            # Job management
+├── candidates.py      # Candidates database
+├── chat_client.py     # Chat client interface
+├── utils.py           # Utility functions
+├── json_store.py      # Data persistence
+├── reset.py           # Reset application state
+├── start.sh           # Start all services
+└── browser.sh         # Browser launcher utility
+```
+
+## 🌐 Web Interface
+
+Once all services are running, access the following interfaces:
+
+- **Agent Dashboard**: `http://localhost:3000`
+- **People Simulator**: `http://localhost:8000`
+
+## 🔍 Troubleshooting
+
+- If you encounter port conflicts, check which process is using the port:
+  ```bash
+  lsof -i :8000  # Check port 8000
+  ```
+  
+- For debugging, set `DEBUG=true` in your `.env` file for more verbose output
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 

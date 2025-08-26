@@ -21,5 +21,8 @@ ttab bash -c "cd $PROJECT_DIR; rm emails.json*; uv run people_server.py"
 ttab bash -c "cd $PROJECT_DIR; uv run mcp_server.py"
 ttab bash -c "cd $PROJECT_DIR; uv run agent_server.py"
 
+# open people interface
 ./browser.sh http://localhost:8000 &
+
+# open agent interface
 ./browser.sh http://localhost:3000 &
