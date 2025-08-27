@@ -29,7 +29,7 @@
   <script>
     window.pug = require("pug");
 
-    function renderPug(str) {
+    function renderHtmlFromPug(str) {
       let indents = str.replace(/^\n/, "").match(/^\s+/);
       let indentRegex = new RegExp(`^${indents[0]}`, "gm");
       return pug.render(indents ? str.replace(indentRegex, "") : str);
@@ -42,6 +42,134 @@
 
     window.ky = ky;
   </script>
+
+  <!-- Custom styles for full height and scrollable columns -->
+  <style>
+    /* Font size classes */
+    .text-xs {
+      font-size: 0.75rem;
+    }
+
+    .text-md {
+      font-size: 0.95rem;
+    }
+
+    /* Animation for status changes - light blue */
+    @keyframes highlight-fade-status {
+      from {
+        opacity: 0;
+        background-color: #cce5ff;
+      }
+      to {
+        opacity: 1;
+        background-color: #cce5ff;
+      }
+    }
+
+    /* Class for status changes */
+    .highlight-fade-status {
+      animation: highlight-fade-status 2s ease-in-out forwards;
+    }
+
+    /* Green fade for replies */
+    .highlight-fade-reply {
+      animation: highlight-fade-green 4s ease-in-out forwards;
+    }
+
+    @keyframes highlight-fade-green {
+      0% {
+        background-color: #66ff66; /* brighter green pop */
+        box-shadow: 0 0 15px #33cc33; /* strong glow */
+        transform: scale(1.02); /* slight "pop out" zoom */
+      }
+      30% {
+        background-color: #b3ffb3;
+        box-shadow: 0 0 8px #70db70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    /* Yellow fade for unread */
+    .highlight-fade-unread {
+      animation: highlight-fade-yellow 4s ease-in-out forwards;
+    }
+
+    @keyframes highlight-fade-yellow {
+      0% {
+        background-color: #fff066; /* bright yellow pop */
+        box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
+        transform: scale(1.02);
+      }
+      30% {
+        background-color: #fff4b3;
+        box-shadow: 0 0 8px #ffeb70;
+        transform: scale(1.01);
+      }
+      100% {
+        background-color: transparent;
+        box-shadow: none;
+        transform: scale(1);
+      }
+    }
+
+    .email-card {
+      background-color: #fffacd; /* Light yellow */
+      border-radius: 0.5rem;
+    }
+
+    .email-card-enter-from,
+    .email-card-leave-to {
+      max-height: 0;
+      opacity: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+
+    .email-card-enter-to,
+    .email-card-leave-from {
+      max-height: 500px; /* Adjust as needed */
+      opacity: 1;
+    }
+
+    .email-card-enter-active,
+    .email-card-leave-active {
+      transition: all 2s ease-in-out;
+    }
+
+    .response-card {
+      background-color: #d4edda !important; /* Light green */
+      border-radius: 0.5rem;
+    }
+
+    .response-card-enter-from,
+    .response-card-leave-to {
+      max-height: 0;
+      opacity: 0;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      transform: translateY(-10px);
+    }
+
+    .response-card-enter-to,
+    .response-card-leave-from {
+      max-height: 200px; /* Adjust based on your content */
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .response-card-enter-active,
+    .response-card-leave-active {
+      transition: all 0.5s ease-in-out;
+      overflow: hidden;
+    }
+  </style>
 </head>
 
 <body>
@@ -49,6 +177,94 @@
 </body>
 
 <script>
+  /* language=pug */
+  let template = renderHtmlFromPug(`
+    div.container-fluid.h-100
+      .row.h-100
+        .col-12
+
+          // Tab navigation
+          ul.nav.nav-tabs.mt-3
+            li.nav-item
+              a.nav-link.active(data-bs-toggle="tab" href="#first-tab")
+                | Candidates
+            li.nav-item
+              a.nav-link(data-bs-toggle="tab" href="#second-tab")
+                | Emails
+
+          // Tab content
+          .tab-content.h-100
+
+            /// First tab - Candidates
+            #first-tab.tab-pane.fade.show.active.h-100
+              .d-flex.flex-row
+                .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
+                  .d-flex.flex-row.overflow-auto
+                    .p-3
+                      h1 Candidates
+                        i.ms-2.fas.fa-laptop
+                      .d-flex.flex-row.flex-wrap.gap-3
+                        div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
+                          .card-body
+                            .h3 {{ candidate.name}}
+
+                            div
+                                i.far.fa-envelope.me-2
+                                code {{ candidate.email }}
+                            div
+                                i.fas.fa-phone-volume.me-2
+                                code {{ candidate.phone }}
+
+                            div(:class="{ 'highlight-fade-status': candidate.statusChanged }")
+                                i(:class="candidate.status === 'Available' ? 'fas fa-check-square' : 'far fa-square'")
+                                code {{ candidate.status }}
+
+                            .border-top.pt-2.mt-2.text-xs
+                              div(:class="[firstUnreadEmail(candidate.candidateId) ? 'highlight-fade-unread': '']")
+                                  i.far.fa-envelope-open.me-2
+                                  span.text-muted Unread emails:
+                                  span {{ firstUnreadEmail(candidate.candidateId) }}
+
+                            .border-top.pt-2.mt-2.text-xs
+                              div(:class="[firstEmailReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
+                                  i.far.fa-comment-dots.me-2
+                                  span.text-muted Latest email reply:
+                                  span {{ firstEmailReply(candidate.candidateId) }}
+
+            /// Second tab - Emails
+            #second-tab.tab-pane.fade.h-100
+              .d-flex.flex-row
+                .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
+                  .d-flex.flex-column.overflow-auto
+                    .p-3
+                      h1 Emails
+                        i.ms-2.fas.fa-envelope
+                      .d-flex.flex-column.gap-2
+                        transition-group(name="email-card" tag="div" style="width: 100%;")
+                          .card.mb-2(v-for="email in allEmails" :key="email.emailId" style="width: 100%;")
+                            .card-body.py-2.text-md
+                              div.mb-1
+                                i.far.fa-user.me-2
+                                span Candidate: {{ getCandidateName(email.candidateId) }}
+                              div.mb-1
+                                i.far.fa-clock.me-2
+                                span {{ new Date(email.timestamp).toLocaleString() }}
+                              .card.email-card
+                                .card-body.py-2
+                                  .h6.mb-1 {{ email.subject }}
+                                  p.mb-1 {{ email.body }}
+                              transition(name="response-card")
+                                .card.response-card.mt-1(
+                                  v-if="email.read && email.response"
+                                )
+                                  .card-body.py-2
+                                    .h6.mb-1 Response:
+                                    p.mb-1 {{ email.response.text }}
+                                    div
+                                      i.far.fa-clock.me-2
+                                      span {{ new Date(email.response.timestamp).toLocaleString() }}
+  `);
+
   function deepCamelCaseKeys(value) {
     if (_.isArray(value)) {
       return value.map(deepCamelCaseKeys);
@@ -60,7 +276,7 @@
     return value;
   }
 
-  async function fetchGetJson(url) {
+  async function getJson(url) {
     return deepCamelCaseKeys(await ky.get(url).json());
   }
 
@@ -68,419 +284,120 @@
     return new Date(email.timestamp);
   }
 
-  function init() {
-    const { createApp } = Vue;
+  const { createApp, ref, reactive, onMounted } = Vue;
 
-    createApp({
-      // Variables available in the template
-      data() {
-        return {
-          candidates: [],
-          candidateUnreadEmails: {}, // Store unread emails for each candidate
-          candidateEmailReplies: {}, // Store candidate replies from read emails
-          allEmails: [], // Store all emails for the Emails tab
-          candidateUnreadSms: {}, // Store unread SMS for each candidate
-          candidateSmsReplies: {}, // Store candidate replies from read SMS
-          allSms: [], // Store all SMS for the SMS tab
-        };
-      },
+  function setup() {
+    // Reactive state
+    const candidates = ref([]);
+    const candidateUnreadEmails = ref({});
+    const candidateEmailReplies = ref({});
+    const allEmails = ref([]);
 
-      // Constructor called upon template instantiation
-      async mounted() {
-        this.candidates = await fetchGetJson("/candidates");
+    // Methods
+    const getCandidateName = (candidateId) => {
+      const candidate = candidates.value.find(
+        (c) => c.candidateId === candidateId,
+      );
+      return candidate ? candidate.name : "Unknown Candidate";
+    };
 
-        setInterval(this.refreshData, 2000);
-      },
+    const getFirstElementText = (aDict, key) => {
+      const arr = aDict[key];
+      if (_.isEmpty(arr)) {
+        return "";
+      }
+      let elem = arr[0];
+      let text = "";
+      if (_.has(elem, "body")) {
+        text = elem.body;
+      } else {
+        text = elem;
+      }
+      return _.truncate(text || "", {
+        length: 100,
+        omission: "...",
+      });
+    };
 
-      // Methods available in the template
-      methods: {
-        async refreshData() {
-          await this.fetchCandidateStatus();
-          await this.fetchAllEmails();
-          await this.fetchAllSms();
-        },
+    const firstUnreadEmail = (candidateId) => {
+      return getFirstElementText(candidateUnreadEmails.value, candidateId);
+    };
 
-        async fetchCandidateStatus() {
-          try {
-            const updatedCandidates = await fetchGetJson("/candidates");
-            for (const updatedCandidate of updatedCandidates) {
-              const candidate = this.candidates.find(
-                (c) => c.candidateId === updatedCandidate.candidateId,
-              );
-              if (candidate && candidate.status !== updatedCandidate.status) {
-                console.log(
-                  `Status of ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
-                );
-                candidate.status = updatedCandidate.status;
-                candidate.statusChanged = true;
-                setTimeout(() => {
-                  candidate.statusChanged = false;
-                }, 3000);
-              }
-            }
-          } catch (error) {
-            console.error("Error fetching candidate status:", error);
-          }
-        },
+    const firstEmailReply = (candidateId) => {
+      return getFirstElementText(candidateEmailReplies.value, candidateId);
+    };
 
-        async fetchAllEmails() {
-          try {
-            const emails = await fetchGetJson("/emails");
-            this.allEmails = _.orderBy(emails, [getTimestampDate], ["desc"]);
-            for (const candidate of this.candidates) {
-              let id = candidate.candidateId;
-              this.candidateUnreadEmails[id] = _.filter(
-                this.allEmails,
-                (e) => !e.read && e.candidateId === id,
-              );
-              this.candidateEmailReplies[id] = _.chain(this.allEmails)
-                .filter((e) => e.read && e.response && e.candidateId === id)
-                .map((e) => e.response.text)
-                .value();
-            }
-          } catch (error) {
-            console.error("Error fetching all emails:", error);
-          }
-        },
-
-        async fetchAllSms() {
-          try {
-            const smsMessages = await fetchGetJson("/sms");
-            this.allSms = _.orderBy(smsMessages, [getTimestampDate], ["desc"]);
-            for (const candidate of this.candidates) {
-              const id = candidate.candidateId;
-              this.candidateUnreadSms[id] = _.filter(
-                this.allSms,
-                (s) => !s.read && s.candidateId === id,
-              );
-              this.candidateSmsReplies[id] = _.chain(this.allSms)
-                .filter((s) => s.read && s.response && s.candidateId === id)
-                .map((s) => s.response.text)
-                .value();
-            }
-          } catch (error) {
-            console.error("Error fetching all SMS messages:", error);
-          }
-        },
-
-        getCandidateName(candidateId) {
-          const candidate = _.find(this.candidates, { candidateId });
-          return candidate ? candidate.name : "Unknown Candidate";
-        },
-
-        getFirstElementText(aDict, key) {
-          const arr = aDict[key];
-          if (_.isEmpty(arr)) {
-            return "";
-          }
-          let elem = arr[0];
-          let text = "";
-          if (_.has(elem, "body")) {
-            text = elem.body;
-          } else {
-            text = elem;
-          }
-          return _.truncate(text || "", {
-            length: 100,
-            omission: "...",
-          });
-        },
-
-        firstUnreadEmail(candidateId) {
-          return this.getFirstElementText(
-            this.candidateUnreadEmails,
-            candidateId,
+    // Data fetching
+    const fetchCandidateStatus = async () => {
+      try {
+        const updatedCandidates = await getJson("/candidates");
+        for (const updatedCandidate of updatedCandidates) {
+          const candidate = candidates.value.find(
+            (c) => c.candidateId === updatedCandidate.candidateId,
           );
-        },
+          if (candidate && candidate.status !== updatedCandidate.status) {
+            console.log(
+              `Status of ${updatedCandidate.name}: ${candidate.status} -> ${updatedCandidate.status}`,
+            );
+            candidate.status = updatedCandidate.status;
+            candidate.statusChanged = true;
+            setTimeout(() => {
+              candidate.statusChanged = false;
+            }, 3000);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching candidate status:", error);
+      }
+    };
 
-        firstSmsReply(candidateId) {
-          return this.getFirstElementText(
-            this.candidateSmsReplies,
-            candidateId,
+    const fetchAllEmails = async () => {
+      try {
+        const emails = await getJson("/emails");
+        allEmails.value = _.orderBy(emails, [getTimestampDate], ["desc"]);
+        for (const candidate of candidates.value) {
+          let id = candidate.candidateId;
+          candidateUnreadEmails.value[id] = _.filter(
+            allEmails.value,
+            (e) => !e.read && e.candidateId === id,
           );
-        },
+          candidateEmailReplies.value[id] = _.chain(allEmails.value)
+            .filter((e) => e.read && e.response && e.candidateId === id)
+            .map((e) => e.response.text)
+            .value();
+        }
+      } catch (error) {
+        console.error("Error fetching all emails:", error);
+      }
+    };
 
-        firstUnreadSms(candidateId) {
-          return this.getFirstElementText(this.candidateUnreadSms, candidateId);
-        },
+    const refreshData = async () => {
+      await fetchCandidateStatus();
+      await fetchAllEmails();
+    };
 
-        firstEmailReply(candidateId) {
-          return this.getFirstElementText(
-            this.candidateEmailReplies,
-            candidateId,
-          );
-        },
-      },
+    // Lifecycle hooks
+    onMounted(async () => {
+      candidates.value = await getJson("/candidates");
+      await refreshData();
+      setInterval(refreshData, 2000);
+    });
 
-      // Main HTML template
-      // language=pug
-      template: renderPug(`
-        div.container-fluid.h-100
-          .row.h-100
-            .col-12
-              // Tab navigation
-              ul.nav.nav-tabs.mt-3
-                li.nav-item
-                  a.nav-link.active(data-bs-toggle="tab" href="#first-tab")
-                    | Candidates
-                li.nav-item
-                  a.nav-link(data-bs-toggle="tab" href="#second-tab")
-                    | Emails
-                li.nav-item
-                  a.nav-link(data-bs-toggle="tab" href="#third-tab")
-                    | SMS
+    // Expose to template
+    return {
+      // State
+      candidates,
+      allEmails,
 
-              // Tab content
-              .tab-content.h-100
-
-                ///// First tab
-                #first-tab.tab-pane.fade.show.active.h-100
-                  .d-flex.flex-row
-                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
-                      .d-flex.flex-row.overflow-auto
-                        .p-3
-                          h1 Candidates
-                            i.ms-2.fas.fa-laptop
-                          .d-flex.flex-row.flex-wrap.gap-3
-                            div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
-                              .card-body
-                                .h3 {{ candidate.name}}
-
-                                div
-                                    i.far.fa-envelope.me-2
-                                    code {{ candidate.email }}
-                                div
-                                    i.fas.fa-phone-volume.me-2
-                                    code {{ candidate.phone }}
-
-                                div(:class="{ 'highlight-fade-status': candidate.statusChanged }")
-                                    i(:class="candidate.status === 'Available' ? 'fas fa-check-square' : 'far fa-square'").me-2
-                                    code {{ candidate.status }}
-
-                                // Display the first unread email body (truncated) if available,
-                                // otherwise show "no unread emails" message
-                                .border-top.pt-2.mt-2.text-xs
-                                  div(:class="[firstUnreadEmail(candidate.candidateId) ? 'highlight-fade-unread': '']")
-                                      i.far.fa-envelope-open.me-2
-                                      span.text-muted Unread emails:
-                                      span {{ firstUnreadEmail(candidate.candidateId) }}
-
-                                // Display the latest candidate email reply if available, otherwise show "You have no replies" message
-                                .border-top.pt-2.mt-2.text-xs
-                                  div(:class="[firstEmailReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
-                                      i.far.fa-comment-dots.me-2
-                                      span.text-muted Latest email reply:
-                                      span {{ firstEmailReply(candidate.candidateId) }}
-
-                                // Display the first unread SMS body (truncated) if available, otherwise show "no unread SMS" message
-                                .border-top.pt-2.mt-2.text-xs
-                                  div(:class="[firstUnreadSms(candidate.candidateId) ? 'highlight-fade-unread': '']")
-                                      i.fas.fa-sms.me-2
-                                      span.text-muted Unread SMS:
-                                      span {{ firstUnreadSms(candidate.candidateId) }}
-
-                                // Display the latest candidate SMS reply if available, otherwise show "You have no SMS replies" message
-                                .border-top.pt-2.mt-2.text-xs
-                                  div(:class="[firstSmsReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
-                                      i.fas.fa-reply.me-2
-                                      span.text-muted Latest SMS reply:
-                                      span {{ firstSmsReply(candidate.candidateId) }}
-
-
-                ///// Second tab
-                #second-tab.tab-pane.fade.h-100
-                  .d-flex.flex-row
-                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
-                      .d-flex.flex-column.overflow-auto
-                        .p-3
-                          h1 Emails
-                            i.ms-2.fas.fa-envelope
-                          .d-flex.flex-column.gap-2
-                            transition-group(name="email-card" tag="div" style="width: 100%;")
-                              .card.mb-2(v-for="email in allEmails" :key="email.emailId" style="width: 100%;")
-                                .card-body.py-2.text-md
-                                  div.mb-1
-                                    i.far.fa-user.me-2
-                                    span Candidate: {{ getCandidateName(email.candidateId) }}
-                                  div.mb-1
-                                    i.far.fa-clock.me-2
-                                    span {{ new Date(email.timestamp).toLocaleString() }}
-                                  .card.email-card
-                                    .card-body.py-2
-                                      .h6.mb-1 {{ email.subject }}
-                                      p.mb-1 {{ email.body }}
-                                  transition(name="response-card")
-                                    .card.response-card.mt-1(
-                                      v-if="email.read && email.response"
-                                    )
-                                      .card-body.py-2
-                                        .h6.mb-1 Response:
-                                        p.mb-1 {{ email.response.text }}
-                                        div
-                                          i.far.fa-clock.me-2
-                                          span {{ new Date(email.response.timestamp).toLocaleString() }}
-
-
-                ///// Third tab
-                #third-tab.tab-pane.fade.h-100
-                  .d-flex.flex-row
-                    .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
-                      .d-flex.flex-column.overflow-auto
-                        .p-3
-                          h1 SMS
-                            i.ms-2.fas.fa-sms
-                          .d-flex.flex-column.gap-2
-                            div.card.mb-2(v-for="sms in allSms" style="width: 100%;")
-                              .card-body.py-2.text-md
-                                div.mb-1
-                                  i.far.fa-user.me-2
-                                  span Candidate: {{ getCandidateName(sms.candidateId) }}
-                                div.mb-1
-                                  i.far.fa-clock.me-2
-                                  span {{ new Date(sms.timestamp).toLocaleString() }}
-                                div.mt-1
-                                  p.mb-1.email-body {{ sms.body }}
-                                transition(name="response-card")
-                                  .card.response-card.mt-1(
-                                    v-if="sms.read && sms.response"
-                                  )
-                                    .card-body.py-2
-                                      .h6.mb-1 Response:
-                                      p.mb-1.response-text {{ sms.response.text }}
-                                      div
-                                        i.far.fa-clock.me-2
-                                        span {{ new Date(sms.response.timestamp).toLocaleString() }}
-              `),
-    }).mount("#app");
+      // Methods
+      getCandidateName,
+      firstUnreadEmail,
+      firstEmailReply,
+      getTimestampDate,
+    };
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    createApp({ setup, template }).mount("#app");
+  });
 </script>
-
-<!-- Custom styles for full height and scrollable columns -->
-<style>
-  /* Font size classes */
-  .text-xs {
-    font-size: 0.75rem;
-  }
-
-  .text-md {
-    font-size: 0.95rem;
-  }
-
-  /* Animation for status changes - light blue */
-  @keyframes highlight-fade-status {
-    from {
-      opacity: 0;
-      background-color: #cce5ff;
-    }
-    to {
-      opacity: 1;
-      background-color: #cce5ff;
-    }
-  }
-
-  /* Class for status changes */
-  .highlight-fade-status {
-    animation: highlight-fade-status 2s ease-in-out forwards;
-  }
-
-  /* Green fade for replies */
-  .highlight-fade-reply {
-    animation: highlight-fade-green 4s ease-in-out forwards;
-  }
-
-  @keyframes highlight-fade-green {
-    0% {
-      background-color: #66ff66; /* brighter green pop */
-      box-shadow: 0 0 15px #33cc33; /* strong glow */
-      transform: scale(1.02); /* slight "pop out" zoom */
-    }
-    30% {
-      background-color: #b3ffb3;
-      box-shadow: 0 0 8px #70db70;
-      transform: scale(1.01);
-    }
-    100% {
-      background-color: transparent;
-      box-shadow: none;
-      transform: scale(1);
-    }
-  }
-
-  /* Yellow fade for unread */
-  .highlight-fade-unread {
-    animation: highlight-fade-yellow 4s ease-in-out forwards;
-  }
-
-  @keyframes highlight-fade-yellow {
-    0% {
-      background-color: #fff066; /* bright yellow pop */
-      box-shadow: 0 0 15px #ffcc33; /* strong yellow glow */
-      transform: scale(1.02);
-    }
-    30% {
-      background-color: #fff4b3;
-      box-shadow: 0 0 8px #ffeb70;
-      transform: scale(1.01);
-    }
-    100% {
-      background-color: transparent;
-      box-shadow: none;
-      transform: scale(1);
-    }
-  }
-
-  .email-card {
-    background-color: #fffacd; /* Light yellow */
-    border-radius: 0.5rem;
-  }
-
-  .email-card-enter-from,
-  .email-card-leave-to {
-    max-height: 0;
-    opacity: 0;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-
-  .email-card-enter-to,
-  .email-card-leave-from {
-    max-height: 500px; /* Adjust as needed */
-    opacity: 1;
-  }
-
-  .email-card-enter-active,
-  .email-card-leave-active {
-    transition: all 2s ease-in-out;
-  }
-
-  .response-card {
-    background-color: #d4edda !important; /* Light green */
-    border-radius: 0.5rem;
-  }
-
-  .response-card-enter-from,
-  .response-card-leave-to {
-    max-height: 0;
-    opacity: 0;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    transform: translateY(-10px);
-  }
-
-  .response-card-enter-to,
-  .response-card-leave-from {
-    max-height: 200px; /* Adjust based on your content */
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .response-card-enter-active,
-  .response-card-leave-active {
-    transition: all 0.5s ease-in-out;
-    overflow: hidden;
-  }
-</style>

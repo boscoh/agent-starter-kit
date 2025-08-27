@@ -12,13 +12,11 @@ from rich.logging import RichHandler
 
 from emails import EmailStore
 from people import PeopleStore
-from sms import SMSManager
 
 logger = logging.getLogger(__name__)
 
 people_manager = PeopleStore()
 email_manager = EmailStore()
-sms_manager = SMSManager()
 
 
 async def poll_email_reply_loop(stop_event: asyncio.Event):
@@ -34,24 +32,6 @@ async def poll_email_reply_loop(stop_event: asyncio.Event):
                 logger.debug("Auto-poll: No new email replies.")
         except Exception as e:
             logger.error(f"Error in email reply polling loop: {str(e)}", exc_info=True)
-
-        try:
-            await asyncio.wait_for(stop_event.wait(), timeout=2)
-        except asyncio.TimeoutError:
-            pass
-
-
-async def poll_sms_reply_loop(stop_event: asyncio.Event):
-    logger.info("Initialise poll_sms_reply_loop")
-    while not stop_event.is_set():
-        try:
-            replied_count = await people_manager.poll_and_reply_to_sms()
-            if replied_count > 0:
-                logger.info(f"Auto-poll: {replied_count} candidate(s) replied to SMS.")
-            else:
-                logger.debug("Auto-poll: No new SMS replies.")
-        except Exception as e:
-            logger.error(f"Error in SMS reply polling loop: {str(e)}", exc_info=True)
 
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=2)
@@ -87,7 +67,6 @@ async def lifespan(app: FastAPI):
     # Start background tasks
     tasks = [
         asyncio.create_task(poll_email_reply_loop(stop_event)),
-        asyncio.create_task(poll_sms_reply_loop(stop_event)),
         asyncio.create_task(status_update_loop(stop_event)),
     ]
 
@@ -288,80 +267,6 @@ async def list_emails(
     else:
         result = email_manager.get_list()
     return result
-
-
-@app.post("/send-sms/{candidate_id}")
-async def send_sms(candidate_id: int, request: Request):
-    """
-    Send an SMS to a candidate.
-
-    Args:
-        candidate_id (int): ID of the candidate to message
-
-    Request Body:
-        - to (str): Recipient phone number (candidate's phone)
-        - from (str): Sender phone number (recruiter's phone)
-        - message (str): SMS message content
-
-    Example:
-        curl -X POST "http://localhost:8000/send-sms/1" \
-          -H "Content-Type: application/json" \
-          -d '{"to": "+1234567890", "from": "+1987654321", "message": "Hello!"}'
-
-    Returns:
-        dict: Success message and SMS details
-
-    Raises:
-        HTTPException: 404 if candidate not found, 400 for missing fields
-    """
-    candidate = people_manager.get_single("candidate_id", candidate_id)
-    if not candidate:
-        raise HTTPException(status_code=404, detail="Candidate Not found")
-
-    data = await request.json()
-    candidate_phone = data.get("to")
-    recruiter_phone = data.get("from")
-    message = data.get("message")
-
-    if not candidate_phone or not recruiter_phone or not message:
-        raise HTTPException(
-            status_code=400, detail="Missing required fields: to, from, message"
-        )
-
-    sms_entry = sms_manager.send_sms(
-        candidate_id=candidate_id,
-        candidate_phone=candidate_phone,
-        recruiter_phone=recruiter_phone,
-        message=message,
-    )
-
-    return {"message": f"SMS sent to {candidate['name']}", "sms": sms_entry}
-
-
-@app.get("/sms")
-async def list_sms(
-    candidate_id: int | None = Query(None, description="Filter by candidate_id"),
-):
-    """
-    List all SMS messages, optionally filtered by candidate.
-
-    Args:
-        candidate_id (int, optional): Filter SMS by candidate ID
-
-    Examples:
-        # Get all SMS messages
-        curl -X GET "http://localhost:8000/sms"
-
-        # Get SMS for specific candidate
-        curl -X GET "http://localhost:8000/sms?candidate_id=1"
-
-    Returns:
-        list: List of SMS dictionaries
-    """
-    sms_list = sms_manager.get_list()
-    if candidate_id:
-        sms_list = [s for s in sms_list if s["candidate_id"] == candidate_id]
-    return sms_list
 
 
 if __name__ == "__main__":
