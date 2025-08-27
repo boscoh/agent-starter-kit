@@ -82,7 +82,17 @@
        BACKGROUND COLORS
        ====================== */
     .light-yellow-bg {
-      background-color: #fff4b3;
+      background-color: #FFF8E1;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 1; }
+    }
+    .thinking {
+      animation: fadeInOut 1.5s ease-in-out infinite;
+      display: inline-block;
+      color: #666666;
     }
 
     .light-green-bg {
@@ -187,7 +197,7 @@
                     | Candidates
                 li.nav-item
                   a.nav-link(data-bs-toggle="tab" href="#third-tab")
-                    | Tools
+                    | MCP Tools
 
               // Tab content
               .tab-content.h-100
@@ -201,7 +211,7 @@
                     .d-flex.flex-column.col-6.w-50.scrollable-column
                       .p-3
                         .mb-2
-                          span.h1 Outreach Agent
+                          span.h1 Autonomous Agent
                             i.ms-2.fa.fa-user-secret
                         .card.mb-3
                           .card-body
@@ -224,9 +234,12 @@
                                       .badge.bg-dark AI-AGENT
                                         i.ms-2.fa.fa-user-secret
                                       .pt-1
-                                        template(v-for="match in state.currentMatches")
-                                          i.d-inline-block.me-2.fa.fa-envelope
-                                          span.me-2 {{ match.name }}
+                                        template(v-if="state.currentMatches && state.currentMatches.length > 0")
+                                          template(v-for="match in state.currentMatches")
+                                            i.d-inline-block.me-2.fa.fa-envelope
+                                            span.me-2 {{ match.name }}
+                                        template(v-else)
+                                          .thinking Talking to MCP...
 
                     // Offers column
                     .d-flex.flex-column.col-3.scrollable-column
@@ -251,9 +264,11 @@
                                 .text-muted.text-xs
                                   ul.mb-2
                                     li.m-0(v-for="(reason, index) in match.reasons" :key="index") {{ reason }}
-                                .badge.bg-dark(v-if="!match.sentEmail?.message") AI-AGENT
+                                .badge.bg-dark(v-if="!match.sentEmail?.message") 
+                                  |AI-AGENT
                                   i.mx-2.fa.fa-user-secret
-                                  | Generating email
+                                div(v-if="!match.sentEmail?.message")
+                                  span.thinking Writing email with LLM...
                                 transition(name="mycard")
                                   div(v-if="match.sentEmail?.message")
                                     div
@@ -322,7 +337,7 @@
                   .d-flex.flex-row
                     .d-flex.flex-column
                         .p-3
-                          h1 Tools
+                          h1 MCP Tools
                           .card.mb-3(v-for="tool in tools")
                             .card-body
                               pre
