@@ -5,40 +5,45 @@
   <!-- prevent auto-zooming on mobile browsers -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <!-- Bootstrap for default styles and utility CSS classes -->
+  <!-- Bootstrap -->
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css"
     rel="stylesheet"
   />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Font Awesome icons -->
+  <!-- Font Awesome -->
   <link
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
     rel="stylesheet"
   />
 
-  <!-- Lodash utility library as _ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
-
-  <!-- Vue 3 framework -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
   <!-- Pug template compiler -->
   <script src="https://pugjs.org/js/pug.js"></script>
   <script>
     window.pug = require("pug");
 
-    function renderPug(str) {
-      let indents = str.replace(/^\n/, "").match(/^\s+/);
-      let indentRegex = new RegExp(`^${indents[0]}`, "gm");
-      return pug.render(indents ? str.replace(indentRegex, "") : str);
+    function renderHtmlFromPug(str) {
+      const lines = str.replace(/^\n/, "").split("\n");
+      const minIndent = Math.min(
+        ...lines.filter((l) => l.trim()).map((l) => l.match(/^\s*/)[0].length),
+      );
+      return pug.render(lines.map((l) => l.slice(minIndent)).join("\n"));
     }
   </script>
 
-  <!-- Ky HTTP client -->
+  <!-- Lodash -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.20/lodash.min.js"></script>
+
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- Ky -->
   <script type="module">
-    import ky from "https://cdn.skypack.dev/ky";
+    import ky from "https://unpkg.com/ky/distribution/index.js";
     window.ky = ky;
   </script>
 
@@ -162,18 +167,17 @@
 </body>
 
 <script>
-  // Utility function to deeply convert all keys in an object to camelCase using Lodash
-  function deepCamelCaseKeys(obj) {
-    if (_.isArray(obj)) {
-      return _.map(obj, deepCamelCaseKeys);
+  const { createApp, ref, onMounted } = Vue;
+
+  function deepCamelCaseKeys(value) {
+    if (_.isArray(value)) {
+      return value.map(deepCamelCaseKeys);
     }
-    if (_.isPlainObject(obj)) {
-      return _(obj)
-        .mapKeys((value, key) => _.camelCase(key))
-        .mapValues(deepCamelCaseKeys)
-        .value();
+    if (_.isPlainObject(value)) {
+      const camelKeyed = _.mapKeys(value, (v, k) => _.camelCase(k));
+      return _.mapValues(camelKeyed, deepCamelCaseKeys);
     }
-    return obj;
+    return value;
   }
 
   function init() {
@@ -182,7 +186,7 @@
     createApp({
       // Main HTML template but in PUG
       // language=pug
-      template: renderPug(`
+      template: renderHtmlFromPug(`
         .container-fluid.h-100
           .row.h-100
             .col-12
@@ -377,5 +381,7 @@
     }).mount("#app");
   }
 
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+  });
 </script>
