@@ -124,7 +124,8 @@
 
     .email-card {
       background-color: #fffacd; /* Light yellow */
-      border-radius: 0.5rem;
+      border-radius: 0.25rem;
+      border: 0;
     }
 
     .email-card-enter-from,
@@ -149,7 +150,8 @@
 
     .response-card {
       background-color: #d4edda !important; /* Light green */
-      border-radius: 0.5rem;
+      border-radius: 0.25rem;
+      border: 0;
     }
 
     .response-card-enter-from,
@@ -259,14 +261,14 @@
                             span {{ new Date(email.timestamp).toLocaleString() }}
                           .card.email-card
                             .card-body.py-2
-                              .h6.mb-1 Subject: {{ email.subject }}
+                              b.mb-1 Subject: {{ email.subject }}
                               p.mb-1 {{ email.body }}
                           transition(name="response-card")
                             .card.response-card.mt-1(
                               v-if="email.read && email.response"
                             )
                               .card-body.py-2
-                                .h6.mb-1 Response:
+                                b.mb-1 Response:
                                 p.mb-1 {{ email.response.text }}
                                 div
                                   i.far.fa-clock.me-2

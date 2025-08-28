@@ -68,7 +68,7 @@
     }
 
     .light-yellow-bg {
-      background-color: #fff8e1;
+      background-color: #fffacd;
     }
 
     @keyframes fadeInOut {
@@ -91,7 +91,8 @@
     }
 
     .text-xs {
-      font-size: 0.75rem;
+      font-size: 0.85rem;
+      line-height: 1.5em;
     }
 
     @keyframes highlight-fade-status {
@@ -232,7 +233,7 @@
                             | &nbsp; {{ match.name }} -
                             | {{ match.score }}%
                           div {{ match.skills?.join(' / ') }}
-                          .text-muted.text-xs
+                          div.text-xs
                             ul.mb-2
                               li.m-0(v-for="(reason, index) in match.reasons" :key="index")
                                 | {{ reason }}
@@ -243,7 +244,7 @@
                             span.thinking Composing email...
                           transition(name="mycard")
                             div(v-if="match.sentEmail?.message")
-                              .p-2.py-1.light-yellow-bg.text-muted.text-xs
+                              .px-2.py-1.light-yellow-bg.text-xs
                                 | Email: {{ match.sentEmail.message}}
 
                 // Replies column
@@ -269,7 +270,7 @@
                               i.mx-2.fa.fa-user-secret
                             span.ms-2(v-if="!reply.classification")
                               span.thinking Interpreting reply...
-                            span.ms-2.p-1.text-muted.small.light-green-bg(v-if="reply.classification")
+                            span.ms-2.p-1.small.light-green-bg(v-if="reply.classification")
                               | {{ reply.classification }}
 
             /// Second tab - Candidates
