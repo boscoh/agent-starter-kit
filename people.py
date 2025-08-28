@@ -9,7 +9,6 @@ from rich.logging import RichHandler
 from chat_client import get_chat_client
 from emails import EmailStore
 from json_store import JsonListStore
-from sms import SMSManager
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,6 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
         super().__init__(file_path)
         self.chat_client = get_chat_client("ollama")
         self.email_manager = EmailStore()
-        self.sms_manager = SMSManager()
 
     async def _generate_ai_response(
         self, candidate_name: str, message_type: str, message_content: str
@@ -146,33 +144,6 @@ class PeopleStore(JsonListStore[Dict[str, Any]]):
                     )
                 else:
                     logger.info(f"{candidate['name']} ignored '{email['subject']}'")
-
-        return replied_count
-
-    async def poll_and_reply_to_sms(self) -> int:
-        self.load()
-        replied_count = 0
-        for sms in self.sms_manager.get_list():
-            if sms["response"] is None and not sms["read"]:
-                candidate = self.get_single("candidate_id", sms["candidate_id"])
-                if not candidate:
-                    continue
-
-                self.sms_manager.mark_sms_as_read(sms["sms_id"])
-
-                if random.random() < 0.7:
-                    reply = await self._generate_ai_response(
-                        candidate["name"], "SMS", sms["body"]
-                    )
-                    self.sms_manager.save_response(sms["sms_id"], reply)
-                    replied_count += 1
-                    logger.info(
-                        f"Auto-reply SMS: {candidate['name']} replied -> {reply}"
-                    )
-                else:
-                    logger.info(
-                        f"{candidate['name']} ignored SMS: '{sms['body'][:30]}...'"
-                    )
 
         return replied_count
 

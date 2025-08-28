@@ -201,8 +201,10 @@
                 .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
                   .d-flex.flex-row.overflow-auto
                     .p-3
+
                       h1 Candidates
                         i.ms-2.fas.fa-laptop
+
                       .d-flex.flex-row.flex-wrap.gap-3
                         div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
                           .card-body

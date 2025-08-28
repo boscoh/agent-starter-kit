@@ -1,6 +1,7 @@
 import logging
 import re
 from typing import Any, Dict
+import textwrap
 
 import httpx
 from path import Path
@@ -56,7 +57,7 @@ async def find_candidates_agent(job):
     result = []
     response = ""
     try:
-        prompt = f"""
+        prompt = textwrap.dedent(f"""
             Give me 2 or 3 candidates who are available for the jobs 
             {job} that have a good match with skills.  
             Be really generous with the matching. 
@@ -81,7 +82,7 @@ async def find_candidates_agent(job):
             Return an empty list if no candidates are available.
             Otherwise return at most 3 items in the list.
             Return as JSON only, and nothing else.
-            """
+            """)
         response = await mcp_chat_client.process_query(prompt)
         (debug_dir / "find_candidates.txt").write_text(response)
         matches = parse_json_from_response(response)
@@ -101,12 +102,12 @@ async def create_email_agent(candidate, job):
     logger.info("create_email_agent: start")
     response = ""
     try:
-        prompt = (
-            f"Write an short (80 words) message to ask {candidate['name']} "
-            f"if they would like a job {job}. "
-            "Don't use tools. Do not use JSON."
-            "Return the text message directly."
-        )
+        prompt = textwrap.dedent(f"""
+            Write an short (80 words) message to ask {candidate['name']} 
+            if they would like a job {job}. 
+            Don't use tools. Do not use JSON.
+            Return the text message directly.
+            """)
         response = await mcp_chat_client.process_query(prompt)
         (debug_dir / "create_email.txt").write_text(response)
         response = parse_json_from_response(response)
@@ -133,11 +134,11 @@ async def classify_email_agent(message):
     logger.info("classify_email_agent: start")
     classification = "not clear"
     try:
-        prompt = (
-            "Classify the following email in terms of: 'interested' or 'rejected'"
-            f"'{message}'"
-            "Please return with a single word, and nothing else."
-        )
+        prompt = textwrap.dedent(f"""
+            Classify the following email in terms of: 'interested' or 'rejected'
+            '{message}'
+            Please return with a single word, and nothing else.
+            """)
         response = await mcp_chat_client.process_query(prompt)
         response = parse_json_from_response(response)
         response = str(response)
@@ -208,19 +209,24 @@ async def check_candidates_replies():
         )
         job_id = candidate["job_id"]
         try:
-            classification = await classify_email_agent(email["response"]["text"])
+            # show empty classification
             state["replies"].insert(
                 0,
                 {
                     "candidate": candidate,
                     "email": email,
-                    "classification": classification,
+                    "classification": '',
                     "jobId": job_id,
                 },
             )
+            classification = await classify_email_agent(email["response"]["text"])
+
+            # now show classification
+            state["replies"][0]['classification'] = classification
 
             available = "interested" in classification.lower()
             job_store.update_job_availability(job_id, available, candidate_id)
+
             state["jobs"] = job_store.get_list()
 
             candidate_store.add_message(candidate_id, email)

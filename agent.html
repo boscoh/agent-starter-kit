@@ -51,7 +51,7 @@
   <style>
     html,
     body {
-      height: 100%;
+      height: 100vh;
       overflow: hidden;
       margin: 0;
       padding: 0;
@@ -62,19 +62,9 @@
       overflow: hidden;
     }
 
-    .container-fluid {
-      height: 100vh;
-      overflow: hidden;
-    }
-
     .scrollable-column {
-      height: calc(100vh - 80px);
+      height: calc(100vh - 137px);
       overflow-y: auto;
-    }
-
-    .slide-height {
-      transition: height 0.3s ease-in-out;
-      overflow: hidden;
     }
 
     .light-yellow-bg {
@@ -93,7 +83,7 @@
     .thinking {
       animation: fadeInOut 1.5s ease-in-out infinite;
       display: inline-block;
-      color: #666666;
+      color: #cc0000;
     }
 
     .light-green-bg {
@@ -117,7 +107,7 @@
       animation: highlight-fade-status 2s ease-in-out forwards;
     }
 
-    /* Card transition animations */
+    /* mycard transition animations */
     .mycard-move,
     .mycard-enter-active,
     .mycard-leave-active,
@@ -161,6 +151,12 @@
       .row.h-100
         .col-12
 
+          .my-4
+            .badge.bg-danger(style="font-size: 1.8rem")
+              | REALLY SIMPLE AUTONOMOUS AI-AGENT
+              i.ms-2.fa.fa-user-secret
+
+
           // Tab navigation
           ul.nav.nav-tabs.mt-3
             li.nav-item
@@ -184,16 +180,10 @@
                 /// Agent column
                 .d-flex.flex-column.col-6.w-50.scrollable-column
                   .p-3
-
-                    .mb-2
-                      span.h1 Autonomous 
-                      .badge.bg-dark(style="font-size: 1.8rem") 
-                        | AI-AGENT
-                        i.ms-2.fa.fa-user-secret
+                    h3 Jobs Available
 
                     .card.mb-3
                       .card-body
-                        h5 Job Table
                         table.table
                           thead
                             tr
@@ -203,21 +193,24 @@
                               th candidates
                           tbody
                             tr(v-for="job in state.jobs" :key="job.jobId")
-                              td(style="max-width: 120px") {{ job.jobId }} [{{job.status}}]
+                              td(style="max-width: 120px")
+                                | {{ job.jobId }}
+                                br
+                                | [{{job.status}}]
                               td(style="max-width: 120px") {{ job.title }}
                               td(style="max-width: 250px")
                                 | {{ job.skills?.join(' / ') }}
-                              td(style="width: 150px")
+                              td(style="min-width: 150px")
                                 template(v-if="job.jobId === state.currentJob.jobId")
-                                  .badge.bg-dark AI-AGENT
+                                  .badge.bg-danger AI-AGENT
                                     i.ms-2.fa.fa-user-secret
                                   .pt-1
                                     template(v-if="state.currentMatches && state.currentMatches.length > 0")
-                                      template(v-for="match in state.currentMatches")
+                                      div(v-for="match in state.currentMatches")
                                         i.d-inline-block.me-2.fa.fa-envelope
                                         span.me-2 {{ match.name }}
                                     template(v-else)
-                                      .thinking Talking to MCP...
+                                      .thinking Ask MCP for candidates...
 
                 // Offers column
                 .d-flex.flex-column.col-3.scrollable-column
@@ -233,28 +226,25 @@
                         :key="match.name + match.jobId"
                       )
                         .card-body
-                            span.me-2 {{ match.jobId }}
-                            b
-                              i.fa.fa-user-tag
-                              | &nbsp; {{ match.name }} -
-                              | {{ match.score }}%
-                            div {{ match.skills?.join(' / ') }}
-                            .text-muted.text-xs
-                              ul.mb-2
-                                li.m-0(v-for="(reason, index) in match.reasons" :key="index") {{ reason }}
-                            .badge.bg-dark(v-if="!match.sentEmail?.message") 
-                              |AI-AGENT
-                              i.mx-2.fa.fa-user-secret
-                            div(v-if="!match.sentEmail?.message")
-                              span.thinking Writing email with LLM...
-                            transition(name="mycard")
-                              div(v-if="match.sentEmail?.message")
-                                div
-                                  .badge.bg-dark AI-AGENT
-                                      i.mx-2.fa.fa-user-secret
-                                      | Sent email
-                                .p-2.py-1.light-yellow-bg.text-muted.text-xs
-                                  | Email: {{ match.sentEmail.message}}
+                          span.me-2 {{ match.jobId }}
+                          b
+                            i.fa.fa-user-tag
+                            | &nbsp; {{ match.name }} -
+                            | {{ match.score }}%
+                          div {{ match.skills?.join(' / ') }}
+                          .text-muted.text-xs
+                            ul.mb-2
+                              li.m-0(v-for="(reason, index) in match.reasons" :key="index")
+                                | {{ reason }}
+                          .badge.bg-danger
+                            |AI-AGENT
+                            i.mx-2.fa.fa-user-secret
+                          div(v-if="!match.sentEmail?.message")
+                            span.thinking Composing email...
+                          transition(name="mycard")
+                            div(v-if="match.sentEmail?.message")
+                              .p-2.py-1.light-yellow-bg.text-muted.text-xs
+                                | Email: {{ match.sentEmail.message}}
 
                 // Replies column
                 .d-flex.flex-column.col-3.scrollable-column
@@ -275,15 +265,19 @@
                             i.fa.fa-envelope
                             | &nbsp; {{ reply.candidate?.name }}
                           div
-                            .badge.bg-dark AI-AGENT
+                            .badge.bg-danger AI-AGENT
                               i.mx-2.fa.fa-user-secret
-                              | interpret
-                            span.ms-2.p-1.text-muted.small.light-green-bg {{ reply.classification }}
+                            span.ms-2(v-if="!reply.classification")
+                              span.thinking Interpreting reply...
+                            span.ms-2.p-1.text-muted.small.light-green-bg(v-if="reply.classification")
+                              | {{ reply.classification }}
 
             /// Second tab - Candidates
             #second-tab.tab-pane.fade.h-100
-              .d-flex.flex-column.p-3
-                h1 Candidates
+              .d-flex.flex-column.p-3.scrollable-column
+
+                h3 Candidates
+
                 .card.mb-3
                   .card-body
                     table.table
@@ -312,16 +306,17 @@
 
             /// Third tab - MCP Tools
             #third-tab.tab-pane.fade.h-100
-              .d-flex.flex-row
-                .d-flex.flex-column
-                    .p-3
-                      h1 MCP Tools
-                      .card.mb-3(v-for="tool in tools")
-                        .card-body
-                          pre
-                            b.h5 {{ tool.name }}
-                          pre.small.p-0(v-for="line in tool.lines" style="line-height: 1")
-                            | {{ line }}
+              .d-flex.flex-column.scrollable-column
+                .p-3
+
+                  h3 MCP Tools
+
+                  .card.mb-3(v-for="tool in tools")
+                    .card-body
+                      pre
+                        b.h5 {{ tool.name }}
+                      pre.small.p-0(v-for="line in tool.lines" style="line-height: 1")
+                        | {{ line }}
             `);
 
   const { createApp, ref, reactive, onMounted } = Vue;
