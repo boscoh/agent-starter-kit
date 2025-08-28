@@ -206,7 +206,7 @@
                                     i.ms-2.fa.fa-user-secret
                                   .pt-1
                                     template(v-if="state.currentMatches && state.currentMatches.length > 0")
-                                      div(v-for="match in state.currentMatches")
+                                      template(v-for="match in state.currentMatches")
                                         i.d-inline-block.me-2.fa.fa-envelope
                                         span.me-2 {{ match.name }}
                                     template(v-else)

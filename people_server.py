@@ -194,9 +194,6 @@ async def send_email(request: Request):
     """
     Send an email to a candidate.
 
-    Args:
-        candidate_id (int): ID of the candidate to email
-
     Request Body:
         - to (str): Recipient email (candidate's email)
         - from (str): Sender email (recruiter's email)
@@ -204,7 +201,7 @@ async def send_email(request: Request):
         - message (str): Email body
 
     Example:
-        curl -X POST "http://localhost:8000/send-email/1" \
+        curl -X POST "http://localhost:8000/send-email" \
           -H "Content-Type: application/json" \
           -d '{"to": "candidate@example.com", "from": "recruiter@company.com", "subject": "Interview", "message": "Hello!"}'
 

@@ -54,6 +54,11 @@
       font-size: 0.95rem;
     }
 
+    .scrollable-column {
+        height: calc(100vh - 137px);
+        overflow-y: auto;
+    }
+
     /* Animation for status changes - light blue */
     @keyframes highlight-fade-status {
       from {
@@ -183,11 +188,14 @@
       .row.h-100
         .col-12
 
+          .my-3
+            h1.ms-3 People Simulator
+
           // Tab navigation
           ul.nav.nav-tabs.mt-3
             li.nav-item
               a.nav-link.active(data-bs-toggle="tab" href="#first-tab")
-                | Candidates
+                | People
             li.nav-item
               a.nav-link(data-bs-toggle="tab" href="#second-tab")
                 | Emails
@@ -195,76 +203,74 @@
           // Tab content
           .tab-content.h-100
 
-            /// First tab - Candidates
+            /// First tab - People
             #first-tab.tab-pane.fade.show.active.h-100
-              .d-flex.flex-row
-                .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
-                  .d-flex.flex-row.overflow-auto
-                    .p-3
+              .d-flex.flex-column.scrollable-column
+                .p-3
 
-                      h1 Candidates
-                        i.ms-2.fas.fa-laptop
+                  h3 People
+                    i.ms-2.fas.fa-user-tag
 
-                      .d-flex.flex-row.flex-wrap.gap-3
-                        div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
-                          .card-body
-                            .h3 {{ candidate.name}}
+                  .d-flex.flex-row.flex-wrap.gap-3
+                    div.card(v-for="candidate in candidates" style="width: 18rem;" :key="candidate.candidateId")
+                      .card-body
+                        .h5 {{ candidate.name}}
 
-                            div
-                                i.far.fa-envelope.me-2
-                                code {{ candidate.email }}
-                            div
-                                i.fas.fa-phone-volume.me-2
-                                code {{ candidate.phone }}
+                        div
+                          i.far.fa-envelope
+                          code.ms-2 {{ candidate.email }}
+                        div
+                          i.fas.fa-phone-volume
+                          code.ms-2 {{ candidate.phone }}
 
-                            div(:class="{ 'highlight-fade-status': candidate.statusChanged }")
-                                i(:class="candidate.status === 'Available' ? 'fas fa-check-square' : 'far fa-square'")
-                                code {{ candidate.status }}
+                        div(:class="{ 'highlight-fade-status': candidate.statusChanged }")
+                          i(:class="candidate.status === 'Available' ? 'fas fa-check-square' : 'far fa-square'")
+                          code.ms-2 {{ candidate.status }}
 
-                            .border-top.pt-2.mt-2.text-xs
-                              div(:class="[firstUnreadEmail(candidate.candidateId) ? 'highlight-fade-unread': '']")
-                                  i.far.fa-envelope-open.me-2
-                                  span.text-muted Unread emails:
-                                  span {{ firstUnreadEmail(candidate.candidateId) }}
+                        .border-top.pt-2.mt-2.text-xs
+                          div(:class="[firstUnreadEmail(candidate.candidateId) ? 'highlight-fade-unread': '']")
+                            i.far.fa-envelope-open.me-2
+                            span.text-muted Unread emails:
+                            span {{ firstUnreadEmail(candidate.candidateId) }}
 
-                            .border-top.pt-2.mt-2.text-xs
-                              div(:class="[firstEmailReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
-                                  i.far.fa-comment-dots.me-2
-                                  span.text-muted Latest email reply:
-                                  span {{ firstEmailReply(candidate.candidateId) }}
+                        .border-top.pt-2.mt-2.text-xs
+                          div(:class="[firstEmailReply(candidate.candidateId) ? 'highlight-fade-reply': '']")
+                            i.far.fa-comment-dots.me-2
+                            span.text-muted Latest email reply:
+                            span {{ firstEmailReply(candidate.candidateId) }}
 
             /// Second tab - Emails
             #second-tab.tab-pane.fade.h-100
-              .d-flex.flex-row
-                .d-flex.flex-column.overflow-auto(style="height: calc(100vh - 50px)")
-                  .d-flex.flex-column.overflow-auto
-                    .p-3
-                      h1 Emails
-                        i.ms-2.fas.fa-envelope
-                      .d-flex.flex-column.gap-2
-                        transition-group(name="email-card" tag="div" style="width: 100%;")
-                          .card.mb-2(v-for="email in allEmails" :key="email.emailId" style="width: 100%;")
-                            .card-body.py-2.text-md
-                              div.mb-1
-                                i.far.fa-user.me-2
-                                span Candidate: {{ getCandidateName(email.candidateId) }}
-                              div.mb-1
-                                i.far.fa-clock.me-2
-                                span {{ new Date(email.timestamp).toLocaleString() }}
-                              .card.email-card
-                                .card-body.py-2
-                                  .h6.mb-1 {{ email.subject }}
-                                  p.mb-1 {{ email.body }}
-                              transition(name="response-card")
-                                .card.response-card.mt-1(
-                                  v-if="email.read && email.response"
-                                )
-                                  .card-body.py-2
-                                    .h6.mb-1 Response:
-                                    p.mb-1 {{ email.response.text }}
-                                    div
-                                      i.far.fa-clock.me-2
-                                      span {{ new Date(email.response.timestamp).toLocaleString() }}
+              .d-flex.flex-column.scrollable-column
+                .p-3
+
+                  h3 Emails
+                    i.ms-2.fas.fa-envelope
+
+                  .d-flex.flex-column.gap-2
+                    transition-group(name="email-card" tag="div" style="width: 100%;")
+                      .card.mb-2(v-for="email in allEmails" :key="email.emailId" style="width: 100%;")
+                        .card-body.py-2.text-md
+                          div.mb-1
+                            i.far.fa-user.me-2
+                            span Candidate: {{ getCandidateName(email.candidateId) }}
+                          div.mb-1
+                            i.far.fa-clock.me-2
+                            span {{ new Date(email.timestamp).toLocaleString() }}
+                          .card.email-card
+                            .card-body.py-2
+                              .h6.mb-1 Subject: {{ email.subject }}
+                              p.mb-1 {{ email.body }}
+                          transition(name="response-card")
+                            .card.response-card.mt-1(
+                              v-if="email.read && email.response"
+                            )
+                              .card-body.py-2
+                                .h6.mb-1 Response:
+                                p.mb-1 {{ email.response.text }}
+                                div
+                                  i.far.fa-clock.me-2
+                                  span {{ new Date(email.response.timestamp).toLocaleString() }}
   `);
 
   function deepCamelCaseKeys(value) {
