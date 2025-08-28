@@ -20,30 +20,29 @@ class EmailStore(JsonListStore[Dict[str, Any]]):
             return 1
         return max(c.get("email_id", 0) for c in self.data) + 1
 
-    def send_email(
+    def send_email_by_candidate_id(
         self,
         candidate_id: int,
-        candidate_email: str,
-        recruiter_email: str,
+        to_email: str,
+        from_email: str,
         subject: str,
         message: str,
     ) -> Dict[str, Any]:
-        logger.info(f"Sending email to candidate {candidate_id} at {candidate_email}")
+        logger.info(f"Sending email to candidate {candidate_id} at {to_email}")
         email_entry = {
             "email_id": self._get_next_email_id(),
             "candidate_id": candidate_id,
-            "from": recruiter_email,
-            "to": candidate_email,
+            "from": from_email,
+            "to": to_email,
             "subject": subject,
             "body": message,
             "timestamp": _current_timestamp(),
             "response": None,
             "read": False,
         }
-
         self.data.append(email_entry)
         self.save()
-        logger.info(f"Email sent to {candidate_email} (ID: {email_entry['email_id']})")
+        logger.info(f"Email sent to {to_email} (ID: {email_entry['email_id']})")
         return email_entry
 
     def mark_email_as_read(self, email_id: int) -> Optional[Dict[str, Any]]:

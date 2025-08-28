@@ -238,7 +238,7 @@ async def check_candidates_replies():
 
 async def send_email(candidate: Dict[str, Any], email_data: Dict[str, str]) -> bool:
     try:
-        url = f"http://127.0.0.1:8000/send-email/{candidate['candidate_id']}"
+        url = f"http://127.0.0.1:8000/send-email"
         headers = {"Content-Type": "application/json"}
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=email_data, headers=headers)

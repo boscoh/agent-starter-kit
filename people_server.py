@@ -189,8 +189,8 @@ async def list_candidates(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/send-email/{candidate_id}")
-async def send_email(candidate_id: int, request: Request):
+@app.post("/send-email")
+async def send_email(request: Request):
     """
     Send an email to a candidate.
 
@@ -214,10 +214,6 @@ async def send_email(candidate_id: int, request: Request):
     Raises:
         HTTPException: 404 if candidate not found, 400 for missing fields
     """
-    candidate = people_manager.get_single("candidate_id", candidate_id)
-    if not candidate:
-        raise HTTPException(status_code=404, detail="Candidate Not found")
-
     data = await request.json()
     candidate_email = data.get("to")
     recruiter_email = data.get("from")
@@ -230,10 +226,17 @@ async def send_email(candidate_id: int, request: Request):
             detail="Missing required fields: to, from, subject, message",
         )
 
-    email_entry = email_manager.send_email(
+    candidate = people_manager.get_single("email", candidate_email)
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Candidate Not found")
+
+    candidate_id = candidate.get("candidate_id")
+    logger.info(f"Candidate {candidate_id} found for email {candidate_email}")
+
+    email_entry = email_manager.send_email_by_candidate_id(
         candidate_id=candidate_id,
-        candidate_email=candidate_email,
-        recruiter_email=recruiter_email,
+        to_email=candidate_email,
+        from_email=recruiter_email,
         subject=subject,
         message=message,
     )
